@@ -137,14 +137,14 @@ from types import *
 # Internal stuff
 
 try:
-    unicode
+    str
 except NameError:
-    unicode = None # unicode support not available
+    str = None # unicode support not available
 
 def _decode(data, encoding, is8bit=re.compile("[\x80-\xff]").search):
     # decode non-ascii string (if possible)
-    if unicode and encoding and is8bit(data):
-        data = unicode(data, encoding)
+    if str and encoding and is8bit(data):
+        data = str(data, encoding)
     return data
 
 def escape(s, replace=string.replace):
@@ -152,7 +152,7 @@ def escape(s, replace=string.replace):
     s = replace(s, "<", "&lt;")
     return replace(s, ">", "&gt;",)
 
-if unicode:
+if str:
     def _stringify(string):
         # convert to 7-bit ascii if possible
         try:
@@ -166,8 +166,8 @@ else:
 __version__ = "1.0.1"
 
 # xmlrpc integer limits
-MAXINT =  2L**31-1
-MININT = -2L**31
+MAXINT =  2**31-1
+MININT = -2**31
 
 # --------------------------------------------------------------------
 # Error constants (from Dan Libby's specification at
@@ -291,7 +291,7 @@ class Boolean:
     def __int__(self):
         return self.value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.value
 
 True, False = Boolean(1), Boolean(0)
@@ -399,9 +399,9 @@ class Binary:
         self.data = base64.decodestring(data)
 
     def encode(self, out):
-        import base64, StringIO
+        import base64, io
         out.write("<value><base64>\n")
-        base64.encode(StringIO.StringIO(self.data), out)
+        base64.encode(io.StringIO(self.data), out)
         out.write("</base64></value>\n")
 
 def _binary(data):
@@ -585,14 +585,14 @@ class Marshaller:
         try:
             f = self.dispatch[type(value)]
         except KeyError:
-            raise TypeError, "cannot marshal %s objects" % type(value)
+            raise TypeError("cannot marshal %s objects" % type(value))
         else:
             f(self, value, write)
 
     def dump_int(self, value, write):
         # in case ints are > 32 bits
         if value > MAXINT or value < MININT:
-            raise OverflowError, "int exceeds XML-RPC limits"
+            raise OverflowError("int exceeds XML-RPC limits")
         write("<value><int>")
         write(str(value))
         write("</int></value>\n")
@@ -600,7 +600,7 @@ class Marshaller:
 
     def dump_long(self, value, write):
         if value > MAXINT or value < MININT:
-            raise OverflowError, "long int exceeds XML-RPC limits"
+            raise OverflowError("long int exceeds XML-RPC limits")
         write("<value><int>")
         write(str(int(value)))
         write("</int></value>\n")
@@ -618,7 +618,7 @@ class Marshaller:
         write("</string></value>\n")
     dispatch[StringType] = dump_string
 
-    if unicode:
+    if str:
         def dump_unicode(self, value, write, escape=escape):
             value = value.encode(self.encoding)
             write("<value><string>")
@@ -628,8 +628,8 @@ class Marshaller:
 
     def dump_array(self, value, write):
         i = id(value)
-        if self.memo.has_key(i):
-            raise TypeError, "cannot marshal recursive sequences"
+        if i in self.memo:
+            raise TypeError("cannot marshal recursive sequences")
         self.memo[i] = None
         dump = self.__dump
         write("<value><array><data>\n")
@@ -642,15 +642,15 @@ class Marshaller:
 
     def dump_struct(self, value, write, escape=escape):
         i = id(value)
-        if self.memo.has_key(i):
-            raise TypeError, "cannot marshal recursive dictionaries"
+        if i in self.memo:
+            raise TypeError("cannot marshal recursive dictionaries")
         self.memo[i] = None
         dump = self.__dump
         write("<value><struct>\n")
-        for k in value.keys():
+        for k in list(value.keys()):
             write("<member>\n")
             if type(k) is not StringType:
-                raise TypeError, "dictionary key must be string"
+                raise TypeError("dictionary key must be string")
             write("<name>%s</name>\n" % escape(k))
             dump(value[k], write)
             write("</member>\n")
@@ -700,7 +700,7 @@ class Unmarshaller:
         if self._type is None or self._marks:
             raise ResponseError()
         if self._type == "fault":
-            raise apply(Fault, (), self._stack[0])
+            raise Fault(*(), **self._stack[0])
         return tuple(self._stack)
 
     def getmethodname(self):
@@ -755,7 +755,7 @@ class Unmarshaller:
         elif data == "1":
             self.append(True)
         else:
-            raise TypeError, "bad boolean value"
+            raise TypeError("bad boolean value")
         self._value = 0
     dispatch["boolean"] = end_boolean
 
@@ -1058,12 +1058,12 @@ class Transport:
         if isinstance(host, TupleType):
             host, x509 = host
 
-        import urllib
-        auth, host = urllib.splituser(host)
+        import urllib.request, urllib.parse, urllib.error
+        auth, host = urllib.parse.splituser(host)
 
         if auth:
             import base64
-            auth = base64.encodestring(urllib.unquote(auth))
+            auth = base64.encodestring(urllib.parse.unquote(auth))
             auth = string.join(string.split(auth), "") # get rid of whitespace
             extra_headers = [
                 ("Authorization", "Basic " + auth)
@@ -1081,9 +1081,9 @@ class Transport:
 
     def make_connection(self, host):
         # create a HTTP connection object from a host descriptor
-        import httplib
+        import http.client
         host, extra_headers, x509 = self.get_host_info(host)
-        return httplib.HTTP(host)
+        return http.client.HTTP(host)
 
     ##
     # Send request header.
@@ -1106,7 +1106,7 @@ class Transport:
         connection.putheader("Host", host)
         if extra_headers:
             if isinstance(extra_headers, DictType):
-                extra_headers = extra_headers.items()
+                extra_headers = list(extra_headers.items())
             for key, value in extra_headers:
                 connection.putheader(key, value)
 
@@ -1164,7 +1164,7 @@ class Transport:
             if not response:
                 break
             if self.verbose:
-                print "body:", repr(response)
+                print("body:", repr(response))
             p.feed(response)
 
         file.close()
@@ -1183,15 +1183,14 @@ class SafeTransport(Transport):
     def make_connection(self, host):
         # create a HTTPS connection object from a host descriptor
         # host may be a string, or a (host, x509-dict) tuple
-        import httplib
+        import http.client
         host, extra_headers, x509 = self.get_host_info(host)
         try:
-            HTTPS = httplib.HTTPS
+            HTTPS = http.client.HTTPS
         except AttributeError:
-            raise NotImplementedError,\
-                  "your version of httplib doesn't support HTTPS"
+            raise NotImplementedError("your version of httplib doesn't support HTTPS")
         else:
-            return apply(HTTPS, (host, None), x509 or {})
+            return HTTPS(*(host, None), **x509 or {})
 
     def send_host(self, connection, host):
         if isinstance(host, TupleType):
@@ -1241,11 +1240,11 @@ class ServerProxy:
         # establish a "logical" server connection
 
         # get the url
-        import urllib
-        type, uri = urllib.splittype(uri)
+        import urllib.request, urllib.parse, urllib.error
+        type, uri = urllib.parse.splittype(uri)
         if type not in ("http", "https"):
-            raise IOError, "unsupported XML-RPC protocol"
-        self.__host, self.__handler = urllib.splithost(uri)
+            raise IOError("unsupported XML-RPC protocol")
+        self.__host, self.__handler = urllib.parse.splithost(uri)
         if not self.__handler:
             self.__handler = "/RPC2"
 
@@ -1305,9 +1304,9 @@ if __name__ == "__main__":
     # server = ServerProxy("http://localhost:8000") # local server
     server = ServerProxy("http://betty.userland.com")
 
-    print server
+    print(server)
 
     try:
-        print server.examples.getStateName(41)
-    except Error, v:
-        print "ERROR", v
+        print(server.examples.getStateName(41))
+    except Error as v:
+        print("ERROR", v)

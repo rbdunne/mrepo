@@ -11,12 +11,12 @@
 __version__ = "$Revision: 198366 $"
 
 import string
-import transports
-import urllib
+from . import transports
+import urllib.request, urllib.parse, urllib.error
 import re
 from types import ListType, TupleType, StringType, UnicodeType, DictType, DictionaryType
 
-from UserDictCase import UserDictCase
+from .UserDictCase import UserDictCase
 
 # We may have an internalized version of xmlrpclib, we determine that in
 # transports
@@ -72,7 +72,7 @@ def split_host(hoststring):
 
 def get_proxy_info(proxy):
     if proxy == None:
-        raise ValueError, "Host string cannot be null"
+        raise ValueError("Host string cannot be null")
 
     arr = string.split(proxy, '://', 1)
     if len(arr) == 2:
@@ -149,12 +149,12 @@ class Server:
         self._password = password
 
         # get the url
-        type, uri = urllib.splittype(uri)
+        type, uri = urllib.parse.splittype(uri)
         type = (string.lower(type)).strip()
         self._type = type
         if type not in ("http", "https"):
-            raise IOError, "unsupported XML-RPC protocol"
-        self._host, self._handler = urllib.splithost(uri)
+            raise IOError("unsupported XML-RPC protocol")
+        self._host, self._handler = urllib.parse.splithost(uri)
         if not self._handler:
             self._handler = "/RPC2"
 
@@ -249,7 +249,7 @@ class Server:
         content_range = headers.get('Content-Range')
         if not content_range:
             return None
-        arr = filter(None, string.split(content_range))
+        arr = [_f for _f in string.split(content_range) if _f]
         assert arr[0] == "bytes"
         assert len(arr) == 2
         arr = string.split(arr[1], '/')
@@ -275,7 +275,7 @@ class Server:
         headers = self.get_response_headers()
         if not headers:
             return None
-        if headers.has_key('Accept-Ranges'):
+        if 'Accept-Ranges' in headers:
             return headers['Accept-Ranges']
         return None
 
@@ -294,9 +294,9 @@ class Server:
             elif item_type == TupleType:
                 item = tuple(map(self._strip_characters, item))
             elif item_type == ListType:
-                item = map(self._strip_characters, item)
+                item = list(map(self._strip_characters, item))
             elif item_type == DictType or item_type == DictionaryType:
-                item = dict([(self._strip_characters(name, val)) for name, val in item.iteritems()])
+                item = dict([(self._strip_characters(name, val)) for name, val in item.items()])
             # else: some object - should take care of himself
             #        numbers - are safe
             result.append(item)
@@ -317,7 +317,7 @@ class Server:
 
             # Clear the transport headers first
             self._transport.clear_headers()
-            for k, v in self._headers.items():
+            for k, v in list(self._headers.items()):
                 self._transport.set_header(k, v)
             
             self._transport.add_header("X-Info",
@@ -341,17 +341,17 @@ class Server:
 
             try:
                 if self._redirected: 
-                    type, uri = urllib.splittype(self._redirected)
+                    type, uri = urllib.parse.splittype(self._redirected)
                     self._redirected = None
  
-                    host, handler = urllib.splithost(uri) 
+                    host, handler = urllib.parse.splithost(uri) 
                     response = self._transport.request(host, handler, 
                         request, verbose=self._verbose) 
                 else:    
                     response = self._transport.request(self._host, \
                                 self._handler, request, verbose=self._verbose)
                 save_response = self._transport.response_status
-            except xmlrpclib.ProtocolError, pe:
+            except xmlrpclib.ProtocolError as pe:
                 if self.use_handler_path:
                     raise pe
                 else:
@@ -362,8 +362,8 @@ class Server:
            
             if save_response == 200:
                 # reset _host and _handler for next request
-                type, uri = urllib.splittype(self._uri)
-                self._host, self._handler = urllib.splithost(uri)
+                type, uri = urllib.parse.splittype(self._uri)
+                self._host, self._handler = urllib.parse.splithost(uri)
                 # exit redirects loop and return response
                 break
             elif save_response in (301, 302):
@@ -377,9 +377,9 @@ class Server:
                  continue
                                 
             if self._verbose:
-                print "%s redirected to %s" % (self._uri, self._redirected)
+                print("%s redirected to %s" % (self._uri, self._redirected))
 
-            typ, uri = urllib.splittype(self._redirected)
+            typ, uri = urllib.parse.splittype(self._redirected)
             
             if typ != None:
                 typ = string.lower(typ)
@@ -457,7 +457,7 @@ class Server:
             'transfer'  : transfer,
             'encoding'  : encoding,
         })
-        apply(self._transport.set_transport_flags, (), kwargs)
+        self._transport.set_transport_flags(*(), **kwargs)
 
     def get_transport_flags(self):
         if not self._transport:
@@ -473,12 +473,12 @@ class Server:
     def set_header(self, name, arg):
         if type(arg) in [ type([]), type(()) ]:
             # Multivalued header
-            self._headers[name] = map(str, arg)
+            self._headers[name] = list(map(str, arg))
         else:
             self._headers[name] = str(arg)
 
     def add_header(self, name, arg):
-        if self._headers.has_key(name):
+        if name in self._headers:
             vlist = self._headers[name]
             if not isinstance(vlist, ListType):
                 vlist = [ vlist ]
@@ -494,7 +494,7 @@ class Server:
         
     # Sets the CA chain to be used
     def use_CA_chain(self, ca_chain = None):
-        raise NotImplementedError, "This method is deprecated"
+        raise NotImplementedError("This method is deprecated")
 
     def add_trusted_cert(self, certfile):
         self._trusted_cert_files.append(certfile)
@@ -531,7 +531,7 @@ class GETServer(Server):
         if not params or len(params) < 1:
             raise Exception("Required parameter channel not found")
         # Strip the multiple / from the handler
-        h_comps = filter(lambda x: x != '', string.split(self._orig_handler, '/'))
+        h_comps = [x for x in string.split(self._orig_handler, '/') if x != '']
         # Set the handler we are going to request
         hndl = h_comps + ["$RHN", params[0], methodname] + list(params[1:])
         self._handler = '/' + string.join(hndl, '/')
@@ -544,7 +544,7 @@ class GETServer(Server):
         if self._redirected and not self.use_handler_path:
            self._handler = self._new_req_body()
             
-        for h, v in self._headers.items():
+        for h, v in list(self._headers.items()):
             self._transport.set_header(h, v)
 
         if self._offset is not None:
@@ -564,8 +564,8 @@ class GETServer(Server):
         return ""
 
     def _new_req_body(self):
-        type, tmpuri = urllib.splittype(self._redirected)
-        site, handler = urllib.splithost(tmpuri)
+        type, tmpuri = urllib.parse.splittype(self._redirected)
+        site, handler = urllib.parse.splithost(tmpuri)
         return handler
     
     def set_range(self, offset=None, amount=None):
@@ -610,12 +610,11 @@ class InvalidRedirectionError(Exception):
 def getHeaderValues(headers, name):
     import mimetools
     if not isinstance(headers, mimetools.Message):
-        if headers.has_key(name):
+        if name in headers:
             return [headers[name]]
         return []
 
-    return map(lambda x: string.strip(string.split(x, ':', 1)[1]), 
-            headers.getallmatchingheaders(name))
+    return [string.strip(string.split(x, ':', 1)[1]) for x in headers.getallmatchingheaders(name)]
 
 class _Method:
     # some magic to bind an XML-RPC method to an RPC server.
@@ -650,7 +649,7 @@ class SlicingMethod(_Method):
 
         # im_self is a pointer to self, so we can modify the class underneath 
         try:
-            self._send.im_self.set_range(offset=self._offset,
+            self._send.__self__.set_range(offset=self._offset,
                 amount=self._amount)
         except AttributeError:
             pass
@@ -659,7 +658,7 @@ class SlicingMethod(_Method):
 
         # Reset "sticky" transport flags
         try:
-            self._send.im_self.reset_transport_flags()
+            self._send.__self__.reset_transport_flags()
         except AttributeError:
             pass
 
@@ -671,10 +670,10 @@ def reportError(headers):
     errcode = 0
     errmsg = ""
     s = "X-RHN-Fault-Code"
-    if headers.has_key(s):
+    if s in headers:
         errcode = int(headers[s])
     s = "X-RHN-Fault-String"
-    if headers.has_key(s):
+    if s in headers:
         _sList = getHeaderValues(headers, s)
         if _sList:
             _s = string.join(_sList, '')

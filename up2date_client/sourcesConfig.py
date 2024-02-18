@@ -14,10 +14,10 @@ import sys
 import string
 import re
 
-import config
-import up2dateUtils
-import up2dateLog
-import wrapperUtils
+from . import config
+from . import up2dateUtils
+from . import up2dateLog
+from . import wrapperUtils
 
 # The format for sources v1 is stupid. each entry can only be one line
 # each different source type has different info (aieee!) # comment stuff out (duh)
@@ -26,8 +26,8 @@ import wrapperUtils
 SOURCESFILE="/etc/sysconfig/rhn/sources"
 
 def showError(line):
-    print "Error parsing %s" % SOURCESFILE
-    print "at line: %s" % line
+    print("Error parsing %s" % SOURCESFILE)
+    print("at line: %s" % line)
 
 class SourcesConfigFile:
     "class for parsing out the up2date/apt/yum src repo info"
@@ -49,7 +49,7 @@ class SourcesConfigFile:
             return
 
         if not os.access(self.fileName, os.R_OK):
-            print "warning: can't access %s" % self.fileName
+            print("warning: can't access %s" % self.fileName)
             return
 
         f = open(self.fileName, "r")
@@ -219,7 +219,7 @@ class SourcesConfigFile:
             return
 
         try:
-            from repoBackends import yumBaseRepo
+            from .repoBackends import yumBaseRepo
         except ImportError:
             self.log.log_me("Unable to import repomd so repomd support will not be available")
             return
@@ -230,7 +230,7 @@ class SourcesConfigFile:
         # use the built in yum config 
         from yum import repos
  
-        for reponame in yb.repos.repos.keys():
+        for reponame in list(yb.repos.repos.keys()):
             repo = yb.repos.repos[reponame]
             if repo.enabled:
                 repo.baseurlSetup()
@@ -251,8 +251,8 @@ class SourcesConfigFile:
             path = data[3]
             dists = data[4:]
         except:
-            print "Error parsing /etc/sysconfig/rhn/up2date"
-            print "at line: %s" % line
+            print("Error parsing /etc/sysconfig/rhn/up2date")
+            print("at line: %s" % line)
             return
         # if multiple dists are appended, make them seperate
         # channels

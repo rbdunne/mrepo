@@ -20,12 +20,12 @@ class DictOfLists(UserDict.UserDict):
     def __init__(self, dict=None):
         UserDict.UserDict.__init__(self, dict)
     def __setitem__(self, key, value):
-        if not self.data.has_key(key):
+        if key not in self.data:
             self.data[key] = []
         self.data[key].append(value)
                                                                                                                                                       
     def getFlatList(self):
-        x = self.keys()
+        x = list(self.keys())
         blip = []
         for i in x:
             for j in self[i]:
@@ -95,10 +95,10 @@ class GenericSolveDep:
     def __getSolutionsInstalled(self, solutions):
         solutionsInstalled = []
         for p in solutions:
-            if self.installedPkgHash.has_key(p[0]):
+            if p[0] in self.installedPkgHash:
                 iList = self.installedPkgHash[p[0]]
                 for iPkg in iList:
-                    if self.availListHash.has_key(tuple(iPkg[:4])):
+                    if tuple(iPkg[:4]) in self.availListHash:
                         # find the avail packages as the same arch
                         # as the installed ones
                         for i in self.availListHash[tuple(p[:4])]:
@@ -121,7 +121,7 @@ class GenericSolveDep:
         availList.sort()
         self.availListHash = {}
         for p in self.availList:
-            if self.availListHash.has_key(tuple(p[:4])):
+            if tuple(p[:4]) in self.availListHash:
                 self.availListHash[tuple(p[:4])].append(p)
             else:
                 self.availListHash[tuple(p[:4])] = [p]
@@ -140,7 +140,7 @@ class GenericSolveDep:
         self.installedPkgList = rpmUtils.getInstalledPackageList(getArch=1)
         self.installedPkgHash = {}
         for pkg in self.installedPkgList:
-            if self.installedPkgHash.has_key(pkg[0]):
+            if pkg[0] in self.installedPkgHash:
                 self.installedPkgHash[pkg[0]].append(pkg)
 	    else:
             	self.installedPkgHash[pkg[0]] = [pkg]
@@ -153,12 +153,12 @@ class GenericSolveDep:
 
 
         newList = []
-        availListNVRE = map(lambda p: p[:4], self.availList)
+        availListNVRE = [p[:4] for p in self.availList]
 
         failedDeps = []
         solutionPkgs = []
         pkgs = []
-        for dep in self.retDict.keys():
+        for dep in list(self.retDict.keys()):
             # skip the rest if we didnt get a result
             if len(self.retDict[dep]) == 0:
                 continue
@@ -211,10 +211,10 @@ class GenericSolveDep:
                     # if we get this far, its still possible that we have package
                     # that is multilib and we need to install both versions of
                     # this is a check for that...
-                    if self.installedPkgHash.has_key(shortest[0]):
+                    if shortest[0] in self.installedPkgHash:
                         iList = self.installedPkgHash[shortest[0]]
                         for iPkg in iList:
-                            if self.availListHash.has_key(tuple(shortest[:4])):
+                            if tuple(shortest[:4]) in self.availListHash:
                                 for i in self.availListHash[tuple(shortest[:4])]:
                                     if self.cfg['forcedArch']:
                                         arches = self.cfg['forcedArch']
@@ -250,7 +250,7 @@ class GenericSolveDep:
                     # arch might not be valid at all, so in that case, dont use it
                     # (which will cause an unsolved dep, but they happen...)
 
-                    if self.availListHash.has_key(tuple(shortest[:4])):
+                    if tuple(shortest[:4]) in self.availListHash:
                         avail = self.availListHash[tuple(shortest[:4])]                            
                         bestArchP = None
                         useNextBestArch = None
@@ -260,7 +260,7 @@ class GenericSolveDep:
                         # sort them, and walk over them in order
 
                         # remove the items with archscore <= 0
-                        app_avail = filter(lambda a: rpm.archscore(a[4]), avail)
+                        app_avail = [a for a in avail if rpm.archscore(a[4])]
                         # sort the items by archscore, most approriate first
                         app_avail.sort(lambda a,b: cmp(rpm.archscore(a[4]),rpm.archscore(b[4])))
 
@@ -349,7 +349,7 @@ class SolveByHeadersSolveDep(GenericSolveDep):
             for unknown in unknowns:
                 for item in fullprovideslist:
                     if unknown == item:
-                        if solutions.has_key(unknown):
+                        if unknown in solutions:
                             solutions[unknown].append(pkg)
                         else:
                             solutions[unknown] = [pkg]

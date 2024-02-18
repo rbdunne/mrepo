@@ -5,7 +5,7 @@ import sys
 
 import rpm
 sys.path.append("/usr/share/rhn/")
-import genericRepo
+from . import genericRepo
 from up2date_client import rpmSource
 from up2date_client import rpmSourceUtils
 from up2date_client import rhnChannel
@@ -18,7 +18,7 @@ from up2date_client import up2dateErrors
 from up2date_client import rpmUtils
 from up2date_client import rpcServer
 
-import genericSolveDep
+from . import genericSolveDep
 
 from rhn import rpclib, xmlrpclib
 
@@ -36,7 +36,7 @@ class RhnSolveDep(genericSolveDep.GenericSolveDep):
             tmpRetList = rpcServer.doCall(s.up2date.solveDependencies,
                                             up2dateAuth.getSystemId(),
                                             unknowns)
-        except rpclib.Fault, f:
+        except rpclib.Fault as f:
             if f.faultCode == -26:
                 #raise RpmError(f.faultString + _(", depended on by %s") % unknowns)
                 raise up2dateErrors.RpmError(f.faultString)
@@ -45,7 +45,7 @@ class RhnSolveDep(genericSolveDep.GenericSolveDep):
 
 
         self.retDict = {}
-        for unknown in tmpRetList.keys():
+        for unknown in list(tmpRetList.keys()):
             if len(tmpRetList[unknown]) == 0:
                 continue
             solutions = tmpRetList[unknown]
@@ -57,7 +57,7 @@ class RhnSolveDep(genericSolveDep.GenericSolveDep):
                 deppkgs = []
                 hdrlist = []
                 p = solution
-                if self.availListHash.has_key(tuple(p[:4])):
+                if tuple(p[:4]) in self.availListHash:
                     for i in self.availListHash[tuple(p[:4])]:
                         deppkgs.append(i)
 
@@ -85,7 +85,7 @@ class RhnSolveDep(genericSolveDep.GenericSolveDep):
                         # just use the right arches
                         if a['arch'] == i[4]:
 #                            print "SOLVING %s with %s" % (unknown, i)
-                            if not self.retDict.has_key(unknown):
+                            if unknown not in self.retDict:
                                 self.retDict[unknown] = []
                             self.retDict[unknown].append(i)
 
@@ -186,7 +186,7 @@ class HttpGetSource(rpmSource.PackageSource):
             size = package[5]
             # trim off the last kb since it's more likely to
             # be trash on a reget
-            startpoint = long(pdLen) - 1024
+            startpoint = int(pdLen) - 1024
             
         channel = package[6]
 

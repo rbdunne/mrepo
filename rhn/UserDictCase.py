@@ -10,6 +10,7 @@ import string
 
 from types import StringType
 from UserDict import UserDict
+from functools import reduce
 
 # A dictionary with case insensitive keys
 class UserDictCase(UserDict):
@@ -26,7 +27,7 @@ class UserDictCase(UserDict):
     def __getitem__(self, key):
         if isinstance(key, StringType):
             key = string.lower(key)
-        if not self.data.has_key(key):
+        if key not in self.data:
             return None
         return self.data[key]   
     def __delitem__(self, key):
@@ -36,20 +37,20 @@ class UserDictCase(UserDict):
         del self.kcase[key]
     get = __getitem__
     def keys(self):
-        return self.kcase.values()
+        return list(self.kcase.values())
     def items(self):
-        return self.get_hash().items()
+        return list(self.get_hash().items())
     def has_key(self, key):
         if isinstance(key, StringType):
             key = string.lower(key)
-        return self.data.has_key(key)
+        return key in self.data
     def clear(self):
         self.data.clear()
         self.kcase.clear()        
     # return this data as a real hash
     def get_hash(self):
         return reduce(lambda a, (ik, v), hc=self.kcase:
-                      a.update({ hc[ik] : v}) or a, self.data.items(), {})
+                      a.update({ hc[ik] : v}) or a, list(self.data.items()), {})
                               
     # return the data for marshalling
     def __getstate__(self):
@@ -61,7 +62,7 @@ class UserDictCase(UserDict):
     def dict(self):
         return self.get_hash()
     def update(self, dict):
-        for (k, v) in dict.items():
+        for (k, v) in list(dict.items()):
             lk = k
             if isinstance(k, StringType):
                 lk = string.lower(k)

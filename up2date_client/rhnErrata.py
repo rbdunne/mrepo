@@ -6,15 +6,15 @@ import sys
 sys.path.insert(0, "/usr/share/rhn/")
 sys.path.insert(1,"/usr/share/rhn/up2date_client")
 
-import up2dateErrors
-import up2dateMessages
-import rpmUtils
-import up2dateAuth
-import up2dateLog
-import up2dateUtils
-import rpcServer
-import transaction
-import config
+from . import up2dateErrors
+from . import up2dateMessages
+from . import rpmUtils
+from . import up2dateAuth
+from . import up2dateLog
+from . import up2dateUtils
+from . import rpcServer
+from . import transaction
+from . import config
 
 from rhn import rpclib
 
@@ -52,7 +52,7 @@ def getAdvisoryInfo(pkg, warningCallback=None):
             info = rpcServer.doCall(s.errata.getPackageErratum,
                                     up2dateAuth.getSystemId(),
                                     pkg)
-        except rpclib.Fault, f:
+        except rpclib.Fault as f:
             if warningCallback:
                 warningCallback(f.faultString)
             return None
@@ -65,7 +65,7 @@ def getAdvisoryInfo(pkg, warningCallback=None):
         info = rpcServer.doCall(s.errata.GetByPackage,
                       "%s-0-0" % pkg[0],
                       up2dateUtils.getVersion())
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         if warningCallback:
             warningCallback(f.faultString)
         return None

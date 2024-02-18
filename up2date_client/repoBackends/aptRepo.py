@@ -6,8 +6,8 @@ import time
 import glob
 import gzip
 import string
-import urllib
-import xmlrpclib
+import urllib.request, urllib.parse, urllib.error
+import xmlrpc.client
 
 import rpm
 
@@ -21,9 +21,9 @@ from up2date_client import config
 from up2date_client import rpcServer
 from up2date_client import up2dateUtils
 
-import genericRepo
-import genericSolveDep
-import urlUtils
+from . import genericRepo
+from . import genericSolveDep
+from . import urlUtils
 
 
 class AptSolveDep(genericSolveDep.SolveByHeadersSolveDep):
@@ -302,7 +302,7 @@ class AptDiskCache(rpmSource.PackageSource):
         if progressCallback:
             progressCallback(100,100)
 
-        tmp_args, tmp_method = xmlrpclib.loads(filecontents)
+        tmp_args, tmp_method = xmlrpc.client.loads(filecontents)
         
         # tmp_args[0] is the list of packages
         return tmp_args[0]

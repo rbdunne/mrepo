@@ -4,7 +4,7 @@
 
 import time
 import string
-import config
+from . import config
 
 class Log:
     """
@@ -18,9 +18,9 @@ class Log:
 
     def log_debug(self, *args):
         if self.cfg["debug"] > 1:
-            apply(self.log_me, args, {})
+            self.log_me(*args, **{})
             if self.cfg["isatty"]:
-                print "D:", string.join(map(lambda a: str(a), args), " ")
+                print("D:", string.join([str(a) for a in args], " "))
                 
     def log_me(self, *args):
         self.log_info = "[%s] %s" % (time.ctime(time.time()), self.app)

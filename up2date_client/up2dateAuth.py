@@ -2,15 +2,15 @@
 #
 # $Id: up2dateAuth.py 87091 2005-11-15 17:25:11Z alikins $
 
-import rpcServer
-import config
+from . import rpcServer
+from . import config
 import os
-import up2dateErrors
-import up2dateUtils
+from . import up2dateErrors
+from . import up2dateUtils
 import string
-import up2dateLog
-import clientCaps
-import capabilities
+from . import up2dateLog
+from . import clientCaps
+from . import capabilities
 
 from types import DictType
 
@@ -49,7 +49,7 @@ def maybeUpdateVersion():
       try:
           newSystemId = rpcServer.doCall(s.registration.upgrade_version,
                                          getSystemId(), systemVer)
-      except rpclib.Fault, f:
+      except rpclib.Fault as f:
           raise up2dateErrors.CommunicationError(f.faultString)
 
       path = cfg["systemIdPath"]
@@ -74,7 +74,7 @@ def maybeUpdateVersion():
       f.write(newSystemId)
       f.close()
       try:
-          os.chmod(path, 0600)
+          os.chmod(path, 0o600)
       except:
           pass
 
@@ -106,7 +106,7 @@ def login(systemId=None):
     global loginInfo
     try:
         li = rpcServer.doCall(server.up2date.login, systemId)
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         if abs(f.faultCode) == 49:
 #            print f.faultString
             raise up2dateErrors.AbuseError(f.faultString)

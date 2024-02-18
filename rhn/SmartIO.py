@@ -13,7 +13,7 @@ This module implements the SmartIO class
 
 import os
 import time
-from cStringIO import StringIO
+from io import StringIO
 
 class SmartIO:
     """

@@ -5,14 +5,14 @@ import sys
 sys.path.insert(0, "/usr/share/rhn/")
 sys.path.insert(1,"/usr/share/rhn/up2date_client")
 
-import config
-import up2dateErrors
-import up2dateMessages
-import rpmUtils
-import transaction
+from . import config
+from . import up2dateErrors
+from . import up2dateMessages
+from . import rpmUtils
+from . import transaction
 import re
 import string
-import distrotype
+from . import distrotype
 
 
 
@@ -171,32 +171,32 @@ def main():
 ##        print e.errmsg
 ##    print
     
-    print "findGpgFingerprints()"
+    print("findGpgFingerprints()")
     fingerprints = findGpgFingerprints()
-    print fingerprints
-    print
+    print(fingerprints)
+    print()
 
-    print "findKeys"
+    print("findKeys")
     for fingerprint in fingerprints:
-        print "findKey(%s)" % fingerprint
-        print findKey(fingerprint)
-    print
+        print("findKey(%s)" % fingerprint)
+        print(findKey(fingerprint))
+    print()
 
     #print """importKey("/usr/share/rhn/RPM-GPG-KEY")"""
     #print importKey("/usr/share/rhn/RPM-GPG-KEY")
     #print
 
-    print "findKey(%s) RPM-GPG-KEY fingerprint" % redhat_gpg_fingerprint
-    print findKey(redhat_gpg_fingerprint)
-    print
+    print("findKey(%s) RPM-GPG-KEY fingerprint" % redhat_gpg_fingerprint)
+    print(findKey(redhat_gpg_fingerprint))
+    print()
 
-    print "importGpgKeyring()"
-    print importGpgKeyring()
-    print
+    print("importGpgKeyring()")
+    print(importGpgKeyring())
+    print()
 
-    print "findKey(%s) RPM-GPG-KEY fingerprint" % redhat_gpg_fingerprint
-    print findKey(redhat_gpg_fingerprint)
-    print
+    print("findKey(%s) RPM-GPG-KEY fingerprint" % redhat_gpg_fingerprint)
+    print(findKey(redhat_gpg_fingerprint))
+    print()
     
 
     

@@ -2,10 +2,10 @@
 
 import os
 import sys
-import rhnChannel
-import config
+from . import rhnChannel
+from . import config
 #import sourcesConfig
-import up2dateLog
+from . import up2dateLog
 
 
 class RepoDirector:
@@ -43,7 +43,7 @@ class RepoDirector:
         return self.depSolveHandlers
 
     def updateAuthInfo(self):
-        for channeltype in self.handlers.keys():
+        for channeltype in list(self.handlers.keys()):
             self.handlers[channeltype].updateAuthInfo()
 
 
@@ -60,7 +60,7 @@ def initRepoDirector():
         return rd
 
     rd = RepoDirector()
-    from repoBackends import up2dateRepo
+    from .repoBackends import up2dateRepo
     up2dateRepo.register(rd)
 
     return rd

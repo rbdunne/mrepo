@@ -15,12 +15,12 @@ def vercmp(a, b):
 
 sys.path.append("/usr/share/createrepo")
 import genpkgmetadata
-print genpkgmetadata.__version__
+print(genpkgmetadata.__version__)
 sys.path.remove("/usr/share/createrepo")
 del genpkgmetadata
 
-print vercmp('0.4.4', '0.4.6')
-print vercmp('0.4.8', '0.4.6')
-print vercmp('0.4.6', '0.4.6')
-print vercmp('0.4.6.0', '0.4.6')
-print vercmp('0.4.6.1', '0.4.6')
+print(vercmp('0.4.4', '0.4.6'))
+print(vercmp('0.4.8', '0.4.6'))
+print(vercmp('0.4.6', '0.4.6'))
+print(vercmp('0.4.6.0', '0.4.6'))
+print(vercmp('0.4.6.1', '0.4.6'))

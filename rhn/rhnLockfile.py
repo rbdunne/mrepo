@@ -52,7 +52,7 @@ class Lockfile:
         if not os.path.exists(dirname):
             try:
                 os.makedirs(dirname)
-            except OSError, e:
+            except OSError as e:
                 if hasattr(e, 'errno') and e.errno == EEXIST:
                     # race condition... dirname exists now.
                     pass
@@ -69,7 +69,7 @@ class Lockfile:
 
         try:
             fcntl.flock(self.f, fcntl.LOCK_EX|fcntl.LOCK_NB)
-        except IOError, e:
+        except IOError as e:
             if e.errno == EWOULDBLOCK:
                 raise LockfileLockedException(
                   "cannot acquire lock on %s." % self.lockfile)
@@ -93,16 +93,16 @@ def main():
 
     try:
         L = Lockfile('./test.pid')
-    except LockfileLockedException, e:
+    except LockfileLockedException as e:
         sys.stderr.write("%s\n" % e)
         sys.exit(-1)
     else:
-        print "lock acquired "
-        print "...sleeping for 10 seconds"
+        print("lock acquired ")
+        print("...sleeping for 10 seconds")
         import time
         time.sleep(10)
         L.release()
-        print "lock released "
+        print("lock released ")
 
 if __name__ == '__main__':
     # test code

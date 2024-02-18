@@ -4,16 +4,16 @@ import os
 import sys
 import string
 
-import config
-import up2dateUtils
-from repoBackends import urlUtils
+from . import config
+from . import up2dateUtils
+from .repoBackends import urlUtils
 
 def getMirrors(source, defaultMirrorUrl=None):
     cfg = config.initUp2dateConfig()
     mirrorPath = "/etc/sysconfig/rhn/mirrors/"
 
     mirrorType = ""
-    if cfg.has_key("mirrorLocation"):
+    if "mirrorLocation" in cfg:
         mirrorType = cfg['mirrorLocation']
     
     if mirrorType != "":
@@ -84,7 +84,7 @@ def getMirrors(source, defaultMirrorUrl=None):
     else:
         mirrorUrl = "%s" % (defaultMirrorUrl)
 
-    print mirrorUrl
+    print(mirrorUrl)
     try:
     
         readfd = urlUtils.open_resource(mirrorUrl, agent="Up2date/%s" % up2dateUtils.version())

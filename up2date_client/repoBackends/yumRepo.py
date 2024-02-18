@@ -7,8 +7,8 @@ import time
 import glob
 import gzip
 import string
-import urllib
-import xmlrpclib
+import urllib.request, urllib.parse, urllib.error
+import xmlrpc.client
 
 import rpm
 
@@ -22,9 +22,9 @@ from up2date_client import config
 from up2date_client import rpcServer
 from up2date_client import up2dateUtils
 
-import genericRepo
-import urlUtils
-import genericSolveDep
+from . import genericRepo
+from . import urlUtils
+from . import genericSolveDep
 
 class YumSolveDep(genericSolveDep.SolveByHeadersSolveDep):
     def __init__(self):
@@ -85,7 +85,7 @@ class YumRepoSource(rpmSource.PackageSource):
             count = count + 1 
             try:
                 # fix this to use fetchUrl and stringIO's for gzip
-                (fn, h) = urllib.urlretrieve(url)
+                (fn, h) = urllib.request.urlretrieve(url)
                 
                 #        print fn
                 # the yum headers are gzip'ped
@@ -104,7 +104,7 @@ class YumRepoSource(rpmSource.PackageSource):
                                                hdr['release'])] = hdr
                 nohdr = 0
             except:
-                print "There was an error downloading:", "%s"  % url
+                print("There was an error downloading:", "%s"  % url)
                 nohdr = 1
 
         return hdr
@@ -380,7 +380,7 @@ class YumDiskCache(rpmSource.PackageSource):
         if progressCallback:
             progressCallback(100,100)
 
-        tmp_args, tmp_method = xmlrpclib.loads(filecontents)
+        tmp_args, tmp_method = xmlrpc.client.loads(filecontents)
         
         # tmp_args[0] is the list of packages
         return tmp_args[0]

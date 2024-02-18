@@ -72,9 +72,9 @@ import socket
 import string
 
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 __all__ = ["HTTP", "HTTPResponse", "HTTPConnection", "HTTPSConnection",
            "HTTPException", "NotConnected", "UnknownProtocol",
@@ -118,7 +118,7 @@ class HTTPResponse:
 
         line = self.fp.readline()
         if self.debuglevel > 0:
-            print "reply:", repr(line)
+            print("reply:", repr(line))
         try:
             [version, status, reason] = string.split(line, None, 2)
         except ValueError:
@@ -158,7 +158,7 @@ class HTTPResponse:
         self.msg = mimetools.Message(self.fp, 0)
         if self.debuglevel > 0:
             for hdr in self.msg.headers:
-                print "header:", hdr,
+                print("header:", hdr, end=' ')
 
         # don't let the msg keep an fp
         self.msg.fp = None
@@ -358,7 +358,7 @@ class HTTPConnection:
                 try:
                     port = int(host[i+1:])
                 except ValueError:
-                    raise InvalidURL, "nonnumeric port: '%s'"%host[i+1:]
+                    raise InvalidURL("nonnumeric port: '%s'"%host[i+1:])
                 host = host[:i]
             else:
                 port = self.default_port
@@ -377,18 +377,18 @@ class HTTPConnection:
             try:
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 if self.debuglevel > 0:
-                    print "connect: (%s, %s)" % (self.host, self.port)
+                    print("connect: (%s, %s)" % (self.host, self.port))
                 self.sock.connect(sa)
-            except socket.error, msg:
+            except socket.error as msg:
                 if self.debuglevel > 0:
-                    print 'connect fail:', (self.host, self.port)
+                    print('connect fail:', (self.host, self.port))
                 if self.sock:
                     self.sock.close()
                 self.sock = None
                 continue
             break
         if not self.sock:
-            raise socket.error, msg
+            raise socket.error(msg)
 
     def close(self):
         """Close the connection to the HTTP server."""
@@ -414,10 +414,10 @@ class HTTPConnection:
         # NOTE: we DO propagate the error, though, because we cannot simply
         #       ignore the error... the caller will know if they can retry.
         if self.debuglevel > 0:
-            print "send:", repr(str)
+            print("send:", repr(str))
         try:
             self.sock.send(str)
-        except socket.error, v:
+        except socket.error as v:
             if v[0] == 32:      # Broken pipe
                 self.close()
             raise
@@ -463,7 +463,7 @@ class HTTPConnection:
 
         try:
             self.send(str)
-        except socket.error, v:
+        except socket.error as v:
             # trap 'Broken pipe' if we're allowed to automatically reconnect
             if v[0] != 32 or not self.auto_open:
                 raise
@@ -547,7 +547,7 @@ class HTTPConnection:
 
         try:
             self._send_request(method, url, body, headers)
-        except socket.error, v:
+        except socket.error as v:
             # trap 'Broken pipe' if we're allowed to automatically reconnect
             if v[0] != 32 or not self.auto_open:
                 raise
@@ -558,15 +558,15 @@ class HTTPConnection:
         # If headers already contains a host header, then define the
         # optional skip_host argument to putrequest().  The check is
         # harder because field names are case insensitive.
-        if (headers.has_key('Host')
-            or filter(lambda x: string.lower(x) == "host", headers.keys())):
+        if ('Host' in headers
+            or [x for x in list(headers.keys()) if string.lower(x) == "host"]):
             self.putrequest(method, url, skip_host=1)
         else:
             self.putrequest(method, url)
 
         if body:
             self.putheader('Content-Length', str(len(body)))
-        for hdr, value in headers.items():
+        for hdr, value in list(headers.items()):
             self.putheader(hdr, value)
         self.endheaders()
 
@@ -638,11 +638,11 @@ class FakeSocket:
         while 1:
             try:
                 buf = self.__ssl.read()
-            except socket.sslerror, err:
+            except socket.sslerror as err:
                 if err[0] == 'EOF':
                     break
                 raise
-            except socket.error, err:
+            except socket.error as err:
                 if err[0] == errno.EINTR:
                     continue
                 raise
@@ -670,7 +670,7 @@ class HTTPSConnection(HTTPConnection):
     default_port = HTTPS_PORT
 
     def __init__(self, host, port=None, **x509):
-        keys = x509.keys()
+        keys = list(x509.keys())
         try:
             keys.remove('key_file')
         except ValueError:
@@ -759,7 +759,7 @@ class HTTP:
         """
         try:
             response = self._conn.getresponse()
-        except BadStatusLine, e:
+        except BadStatusLine as e:
             ### hmm. if getresponse() ever closes the socket on a bad request,
             ### then we are going to have problems with self.sock
 
@@ -804,7 +804,7 @@ if hasattr(socket, 'ssl'):
             # urf. compensate for bad input.
             if port == 0:
                 port = None
-            self._setup(apply(self._connection_class, (host, port), x509))
+            self._setup(self._connection_class(*(host, port), **x509))
 
             # we never actually use these for anything, but we keep them
             # here for compatibility with post-1.5.2 CVS.
@@ -885,13 +885,13 @@ def test():
     h.putrequest('GET', selector)
     h.endheaders()
     status, reason, headers = h.getreply()
-    print 'status =', status
-    print 'reason =', reason
-    print
+    print('status =', status)
+    print('reason =', reason)
+    print()
     if headers:
-        for header in headers.headers: print string.strip(header)
-    print
-    print h.getfile().read()
+        for header in headers.headers: print(string.strip(header))
+    print()
+    print(h.getfile().read())
 
     # minimal test that code to extract host from url works
     class HTTP11(HTTP):
@@ -912,13 +912,13 @@ def test():
         hs.putrequest('GET', selector)
         hs.endheaders()
         status, reason, headers = hs.getreply()
-        print 'status =', status
-        print 'reason =', reason
-        print
+        print('status =', status)
+        print('reason =', reason)
+        print()
         if headers:
-            for header in headers.headers: print string.strip(header)
-        print
-        print hs.getfile().read()
+            for header in headers.headers: print(string.strip(header))
+        print()
+        print(hs.getfile().read())
 
 # Stuff used by urlsplit
 MAX_CACHE_SIZE = 20

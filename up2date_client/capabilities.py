@@ -7,9 +7,9 @@
 import UserDict
 import os
 import sys
-import config
-import up2dateErrors
-import rpcServer
+from . import config
+from . import up2dateErrors
+from . import rpcServer
 import string
 
 
@@ -28,7 +28,7 @@ def parseCap(capstring):
     capslist = []
     for cap in caps:
         try:
-            (key_version, value) = map(string.strip, string.split(cap, "=", 1))
+            (key_version, value) = list(map(string.strip, string.split(cap, "=", 1)))
         except ValueError:
             # Bad directive: not in 'a = b' format
             continue
@@ -39,7 +39,7 @@ def parseCap(capstring):
         
         # just to be paranoid
         if version[-1] != ")":
-            print "something broke in parsing the capabilited headers"
+            print("something broke in parsing the capabilited headers")
         #FIXME: raise an approriate exception here...
 
         # trim off the trailing paren
@@ -61,7 +61,7 @@ class Capabilities(UserDict.UserDict):
 
 
     def populate(self, headers):
-        for key in headers.keys():
+        for key in list(headers.keys()):
             if key == "x-rhn-server-capability":
                 capslist = parseCap(headers[key])
 
@@ -75,18 +75,18 @@ class Capabilities(UserDict.UserDict):
             rng = string.split(versionString, "-")
             start = rng[0]
             end = rng[1]
-            versions = range(int(start), int(end)+1)
+            versions = list(range(int(start), int(end)+1))
             return versions
 
         vers = string.split(versionString, ':')
         if len(vers) > 1:
-            versions = map(lambda a:int(a), vers)
+            versions = [int(a) for a in vers]
             return versions
 
         return [int(versionString)]
 
     def validateCap(self, cap, capvalue):
-        if not self.data.has_key(cap):
+        if cap not in self.data:
             errstr = "This client requires the server to support %s, which the current " \
                      "server does not support" % cap
             self.missingCaps[cap] = None
@@ -98,13 +98,13 @@ class Capabilities(UserDict.UserDict):
 
 
     def validate(self):
-        for key in self.neededCaps.keys():
+        for key in list(self.neededCaps.keys()):
             self.validateCap(key, self.neededCaps[key])
 
         self.workaroundMissingCaps()
 
     def setConfig(self, key, configItem):
-        if self.tmpCaps.has_key(key):
+        if key in self.tmpCaps:
             self.cfg[configItem] = 0
             del self.tmpCaps[key]
         else:
@@ -118,7 +118,7 @@ class Capabilities(UserDict.UserDict):
 
         # this is an example of how to work around it
         key = 'caneatCheese'
-        if self.tmpCaps.has_key(key):
+        if key in self.tmpCaps:
             # do whatevers needed to workaround
             del self.tmpCaps[key]
         else:
@@ -136,7 +136,7 @@ class Capabilities(UserDict.UserDict):
                          "registration.delta_packages" : 'supportsDeltaPackages',
                          "xmlrpc.packages.extended_profile" : 'supportsExtendedPackageProfile'}
 
-        for key in capsConfigMap.keys():
+        for key in list(capsConfigMap.keys()):
             self.setConfig(key, capsConfigMap[key])
 
         # if we want to blow up on missing caps we cant eat around

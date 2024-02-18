@@ -20,13 +20,13 @@ import sys
 import re
 import struct
         
-import up2dateErrors
-import up2dateUtils
-import config
+from . import up2dateErrors
+from . import up2dateUtils
+from . import config
 import rpm
 import fnmatch
-import gpgUtils
-import transaction
+from . import gpgUtils
+from . import transaction
 import string
 
 
@@ -66,7 +66,7 @@ def installedHeaderByPkg(pkg):
 def installedHeaderIndex(**kwargs):
     _ts = transaction.initReadOnlyTransaction()
     mi = _ts.dbMatch()
-    for keyword in kwargs.keys():
+    for keyword in list(kwargs.keys()):
         mi.pattern(keyword, rpm.RPMMIRE_GLOB, kwargs[keyword])
         
     # we really shouldnt be getting multiples here, but what the heck
@@ -81,7 +81,7 @@ def installedHeaderIndex(**kwargs):
 def installedHeaderByKeyword(**kwargs):
     _ts = transaction.initReadOnlyTransaction()
     mi = _ts.dbMatch()
-    for keyword in kwargs.keys():
+    for keyword in list(kwargs.keys()):
         mi.pattern(keyword, rpm.RPMMIRE_GLOB, kwargs[keyword])
     # we really shouldnt be getting multiples here, but what the heck
     headerList = []
@@ -171,7 +171,7 @@ def getInstalledObsoletes(msgCallback = None, progressCallback = None, getArch =
     
     for nvr,obs in obs_list:
         for ob in obs:
-            if not obsHash.has_key(ob):
+            if ob not in obsHash:
                 obsHash[ob] = []
             obsHash[ob].append(nvr)
 
@@ -299,7 +299,7 @@ def checkRpmMd5(fileName):
     fdno = os.open(fileName, os.O_RDONLY)
     try:
         h = _ts.hdrFromFdno(fdno)
-    except rpm.error, e:
+    except rpm.error as e:
         _ts.popVSFlags()
         return 0
     os.close(fdno)
@@ -425,23 +425,23 @@ def rpmCallback(what, amount, total, key, cb):
     elif what == rpm.RPMCALLBACK_INST_START:
         pass
     elif what == rpm.RPMCALLBACK_INST_CLOSE_FILE:
-        print
+        print()
     elif what == rpm.RPMCALLBACK_TRANS_PROGRESS:
         if cb:
             cb(amount, total)
         else:
-            print "transaction %.5s%% done\r" % ((float(amount) / total) * 100),
+            print("transaction %.5s%% done\r" % ((float(amount) / total) * 100), end=' ')
     elif what == rpm.RPMCALLBACK_INST_PROGRESS:
-        print "installation %.5s%% done\r" % ((float(amount) / total) * 100),
+        print("installation %.5s%% done\r" % ((float(amount) / total) * 100), end=' ')
 
-    if (rpm.__dict__.has_key("RPMCALLBACK_UNPACK_ERROR")):
+    if ("RPMCALLBACK_UNPACK_ERROR" in rpm.__dict__):
         if ((what == rpm.RPMCALLBACK_UNPACK_ERROR) or
                    (what == rpm.RPMCALLBACK_CPIO_ERROR)):
             pkg = "%s-%s-%s" % (key[rpm.RPMTAG_NAME],
                                 key[rpm.RPMTAG_VERSION],
                                 key[rpm.RPMTAG_RELEASE])
 
-            raise up2dateErrors.RpmInstallError, "There was a fatal error installing a package", pkg
+            raise up2dateErrors.RpmInstallError("There was a fatal error installing a package").with_traceback(pkg)
 
 
 
@@ -548,9 +548,9 @@ def readHeaderBlob(blob, filename=None):
         hdr = rpm.headerLoad(blob)
     except:
         if filename:
-            print "rpm was unable to load the header: %s" % filename
+            print("rpm was unable to load the header: %s" % filename)
         else:
-            print "rpm was unable to load a header"
+            print("rpm was unable to load a header")
         return None
     # Header successfully read
     #print hdr['name']
@@ -561,27 +561,27 @@ def main():
 
     pkg = ["gpg-pubkey", "db42a60e", "37ea5438" , "", None]
 
-    print verifyPackages([pkg])
+    print(verifyPackages([pkg]))
     sys.exit()
     # zsh-4.0.4-8
     h = installedHeader("zsh", _ts)
-    print
+    print()
     if h['epoch'] == None:
         epoch = '0'
     pkg = [h['name'], h['version'] , h['release'], epoch, h['arch']]
-    print installedHeaderIndexByPkg(pkg)
+    print(installedHeaderIndexByPkg(pkg))
 
     pkg = ['kernel', '2.4.18', '7.93', '0','i686']
-    print installedHeaderIndexByPkg(pkg)
+    print(installedHeaderIndexByPkg(pkg))
 
     pkg = ['kernel', '2.4.18', '3', '0', 'i686']
-    print installedHeaderIndexByPkg(pkg)
+    print(installedHeaderIndexByPkg(pkg))
 
 
-    print installedHeaderIndex(name="up2date")
+    print(installedHeaderIndex(name="up2date"))
 
-    print installedHeaderIndex(epoch="1")
+    print(installedHeaderIndex(epoch="1"))
 
-    print installedHeaderByKeyword(version="1.0")
+    print(installedHeaderByKeyword(version="1.0"))
 if __name__ == "__main__":
     main()

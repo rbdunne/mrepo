@@ -133,7 +133,7 @@ class ConfigFile:
 
             value = None
 	    try:
-		(key, value) = map(string.strip, string.split(line, "=", 1))
+		(key, value) = list(map(string.strip, string.split(line, "=", 1)))
 	    except ValueError:
                 # Bad directive: not in 'a = b' format
 		continue
@@ -164,7 +164,7 @@ class ConfigFile:
 
             # now insert the (comment, value) in the dictionary
             newval = (comment, value)
-            if self.dict.has_key(key): # do we need to update
+            if key in self.dict: # do we need to update
                 newval = self.dict[key]
                 if comment is not None: # override comment
                     newval = (comment, newval[1])
@@ -186,21 +186,21 @@ class ConfigFile:
         # and fails (see #130391)
         if not os.access(self.fileName, os.R_OK):
             if not os.access(os.path.dirname(self.fileName), os.R_OK):
-                print "%s was not found" % os.path.dirname(self.fileName)
+                print("%s was not found" % os.path.dirname(self.fileName))
                 return
         
         f = open(self.fileName, "w")
-        os.chmod(self.fileName, 0600)
+        os.chmod(self.fileName, 0o600)
 
 	f.write("# Automatically generated Red Hat Update Agent "\
                 "config file, do not edit.\n")
 	f.write("# Format: 1.0\n")
 	f.write("")
-	for key in self.dict.keys():
+	for key in list(self.dict.keys()):
 	    val = self.dict[key]
 	    f.write("%s[comment]=%s\n" % (key, val[0]))
 	    if type(val[1]) == type([]):
-		f.write("%s=%s;\n" % (key, string.join(map(str, val[1]), ';')))
+		f.write("%s=%s;\n" % (key, string.join(list(map(str, val[1])), ';')))
 	    else:
 		f.write("%s=%s\n" % (key, val[1]))
 	    f.write("\n")
@@ -208,28 +208,28 @@ class ConfigFile:
 
     # dictionary interface
     def has_key(self, name):
-        return self.dict.has_key(name)
+        return name in self.dict
     def keys(self):
-	return self.dict.keys()
+	return list(self.dict.keys())
     def values(self):
-        return map(lambda a: a[1], self.dict.values())
+        return [a[1] for a in list(self.dict.values())]
     def update(self, dict):
         self.dict.update(dict)
     # we return None when we reference an invalid key instead of
     # raising an exception
     def __getitem__(self, name):
-        if self.dict.has_key(name):
+        if name in self.dict:
             return self.dict[name][1]
         return None    
     def __setitem__(self, name, value):
-        if self.dict.has_key(name):
+        if name in self.dict:
             val = self.dict[name]
         else:
             val = (None, None)
 	self.dict[name] = (val[0], value)
     # we might need to expose the comments...
     def info(self, name):
-        if self.dict.has_key(name):
+        if name in self.dict:
             return self.dict[name][0]
         return ""
 
@@ -246,36 +246,36 @@ class Config:
     # classic dictionary interface: we prefer values from the runtime
     # dictionary over the ones from the stored config
     def has_key(self, name):
-        if self.runtime.has_key(name):
+        if name in self.runtime:
             return 1
-        if self.stored.has_key(name):
+        if name in self.stored:
             return 1
         return 0
     def keys(self):
-        ret = self.runtime.keys()
-        for k in self.stored.keys():
+        ret = list(self.runtime.keys())
+        for k in list(self.stored.keys()):
             if k not in ret:
                 ret.append(k)
         return ret
     def values(self):
         ret = []
-        for k in self.keys():
+        for k in list(self.keys()):
             ret.append(self.__getitem__(k))
         return ret
     def items(self):
         ret = []
-        for k in self.keys():
+        for k in list(self.keys()):
             ret.append((k, self.__getitem__(k)))
         return ret
     def __len__(self):
-        return len(self.keys())
+        return len(list(self.keys()))
     def __setitem__(self, name, value):
         self.runtime[name] = value
     # we return None when nothing is found instead of raising and exception
     def __getitem__(self, name):
-        if self.runtime.has_key(name):
+        if name in self.runtime:
             return self.runtime[name]
-        if self.stored.has_key(name):
+        if name in self.stored:
             return self.stored[name]
         return None
         
@@ -288,8 +288,8 @@ class Config:
     def load(self, filename):
         self.stored.load(filename)
         # make sure the runtime cache is not polluted
-        for k in self.stored.keys():
-            if not self.runtime.has_key(k):
+        for k in list(self.stored.keys()):
+            if k not in self.runtime:
                 continue
             # allow this one to pass through
             del self.runtime[k]
@@ -297,7 +297,7 @@ class Config:
     def set(self, name, value):
         self.stored[name] = value
         # clean up the runtime cache
-        if self.runtime.has_key(name):
+        if name in self.runtime:
             del self.runtime[name]
 
 class UuidConfig(ConfigFile):
@@ -332,7 +332,7 @@ def initUp2dateConfig(file = "/etc/sysconfig/rhn/up2date"):
         uuidCfg = UuidConfig()
         uuidCfg.load()
         if uuidCfg['rhnuuid'] == None or uuidCfg['rhnuuid'] == "UNSPECIFIED":
-            print "No rhnuuid config option found in /etc/sysconfig/rhn/up2date-uuid."
+            print("No rhnuuid config option found in /etc/sysconfig/rhn/up2date-uuid.")
             sys.exit(1)
         cfg['rhnuuid'] = uuidCfg['rhnuuid']
 
@@ -370,12 +370,12 @@ def initUp2dateConfig(file = "/etc/sysconfig/rhn/up2date"):
 def main():
     source = initUp2dateConfig("foo-test.config")
 
-    print source["serverURL"]
+    print(source["serverURL"])
     source["serverURL"] =  "http://hokeypokeyland.com"
-    print source["serverURL"]
-    print source.set("debug", 100)
+    print(source["serverURL"])
+    print(source.set("debug", 100))
     source.save()
-    print source["debug"]
+    print(source["debug"])
 
 if __name__ == "__main__":
     __CFG = None

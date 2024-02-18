@@ -7,13 +7,13 @@ import os
 import time
 import random
 
-import up2dateAuth
-import up2dateErrors
-import config
-import up2dateLog
-import rpcServer
+from . import up2dateAuth
+from . import up2dateErrors
+from . import config
+from . import up2dateLog
+from . import rpcServer
 #import sourcesConfig
-import urlMirrors
+from . import urlMirrors
 from rhn import rpclib
 
 
@@ -40,7 +40,7 @@ class rhnChannel:
     def __init__(self, **kwargs):
         self.dict = {}
 
-        for kw in kwargs.keys():
+        for kw in list(kwargs.keys()):
             self.dict[kw] = kwargs[kw]
                
     def __getitem__(self, item):
@@ -50,13 +50,13 @@ class rhnChannel:
         self.dict[item] = value
 
     def keys(self):
-        return self.dict.keys()
+        return list(self.dict.keys())
 
     def values(self):
-        return self.dict.values()
+        return list(self.dict.values())
 
     def items(self):
-        return self.dict.items()
+        return list(self.dict.items())
 
 class rhnChannelList:
     def __init__(self):
@@ -116,7 +116,7 @@ def getChannelDetails():
             for up2dateChannel in up2dateChannels:
                 if up2dateChannel['label'] != sourceChannel['label']:
                     continue
-                for key in up2dateChannel.keys():
+                for key in list(up2dateChannel.keys()):
                     sourceChannel[key] = up2dateChannel[key]
                 channels.append(sourceChannel)
             
@@ -136,7 +136,7 @@ def getMirror(source,url):
     random.seed(time.time())
     index = random.randrange(0, length)
     randomMirror = mirrors[index]
-    print "using mirror: %s" % randomMirror
+    print("using mirror: %s" % randomMirror)
     return randomMirror
     
 
@@ -159,7 +159,7 @@ def getChannels(force=None, label_whitelist=None):
         sources = [{'url': 'https://xmlrpc.rhn.redhat.com/XMLRPC', 'type': 'up2date'}]
         useRhn = 1
 
-        if cfg.has_key('cmdlineChannel'):
+        if 'cmdlineChannel' in cfg:
             sources.append({'type':'cmdline', 'label':'cmdline'}) 
 
         selected_channels = rhnChannelList()
@@ -174,7 +174,7 @@ def getChannels(force=None, label_whitelist=None):
         if tmp == None:
             tmp = []
         for i in tmp:
-            if label_whitelist and not label_whitelist.has_key(i[0]):
+            if label_whitelist and i[0] not in label_whitelist:
                 continue
                 
             channel = rhnChannel(label = i[0], version = i[1],
@@ -190,7 +190,7 @@ def getChannels(force=None, label_whitelist=None):
 def setChannels(tempchannels):
     global selected_channels
     selected_channels = None
-    whitelist = dict(map(lambda x: (x,1), tempchannels))
+    whitelist = dict([(x,1) for x in tempchannels])
     return getChannels(label_whitelist=whitelist)
 
 
@@ -203,7 +203,7 @@ def subscribeChannels(channels,username,passwd):
                           channels,
                           username,
                           passwd)
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         if f.faultCode == -36:
             raise up2dateErrors.PasswordError(f.faultString)
         else:
@@ -217,7 +217,7 @@ def unsubscribeChannels(channels,username,passwd):
                           channels,
                           username,
                           passwd)
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         if f.faultCode == -36:
             raise up2dateErrors.PasswordError(f.faultString)
         else:

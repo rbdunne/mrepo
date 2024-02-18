@@ -23,8 +23,8 @@ from up2date_client import rpmUtils
 from up2date_client import up2dateUtils
 from up2date_client import transaction
 
-import genericRepo
-import genericSolveDep
+from . import genericRepo
+from . import genericSolveDep
 
 class DirSolveDep(genericSolveDep.SolveByHeadersSolveDep):
     def __init__(self):
@@ -135,7 +135,7 @@ class DirRepoSource(rpmSource.PackageSource):
 
             # group packages by nvre and store the different arches in a list
             pkgNvre = tuple(pkg[:4])
-            if not pkgsDict.has_key(pkgNvre):
+            if pkgNvre not in pkgsDict:
                 pkgsDict[pkgNvre] = []
             pkgsDict[pkgNvre].append(pkg)
 
@@ -144,7 +144,7 @@ class DirRepoSource(rpmSource.PackageSource):
     def _package_list_from_dict(self, pkgsDict, storage_dir, label, name_suffix,
         version):
         pkgList = []
-        names = pkgsDict.keys()
+        names = list(pkgsDict.keys())
         names.sort()
         for name in names:
             pkgs = pkgsDict[name]
@@ -167,11 +167,11 @@ class DirRepoSource(rpmSource.PackageSource):
             channel['label'])
             
         latestPkgsDict = {}
-        for pkgNvre in pkgsDict.keys():
+        for pkgNvre in list(pkgsDict.keys()):
             # first version of this package, continue
             pkgName = pkgNvre[0]
             tupNvre = tuple(pkgNvre)
-            if not latestPkgsDict.has_key(pkgName):
+            if pkgName not in latestPkgsDict:
                 latestPkgsDict[pkgName] = pkgsDict[tupNvre]
                 continue
 

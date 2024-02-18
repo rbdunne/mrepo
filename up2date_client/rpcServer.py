@@ -4,27 +4,27 @@
 
 import os
 import sys
-import config
+from . import config
 import types
 import socket
 import string
 import time
-import httplib
-import urllib2
+import http.client
+import urllib.request, urllib.error, urllib.parse
 
-import clientCaps
-import up2dateLog
-import up2dateErrors 
-import up2dateAuth 
-import up2dateUtils
-import repoDirector
+from . import clientCaps
+from . import up2dateLog
+from . import up2dateErrors 
+from . import up2dateAuth 
+from . import up2dateUtils
+from . import repoDirector
 
 #import wrapperUtils
 from rhn import rpclib
     
 
 def stdoutMsgCallback(msg):
-    print msg
+    print(msg)
 
 
 def hasSSL():
@@ -48,7 +48,7 @@ class RetryServer(rpclib.Server):
             except rpclib.Fault:
 		raise 
             except:
-                server = self.serverList.next()
+                server = next(self.serverList)
                 if server == None:
                     # since just because we failed, the server list could
                     # change (aka, firstboot, they get an option to reset the
@@ -57,21 +57,21 @@ class RetryServer(rpclib.Server):
                     raise
 
                 msg = "An error occured talking to %s:\n" % self._host
-                msg = msg + "%s\n%s\n" % (sys.exc_type, sys.exc_value)
+                msg = msg + "%s\n%s\n" % (sys.exc_info()[0], sys.exc_info()[1])
                 msg = msg + "Trying the next serverURL: %s\n" % self.serverList.server()
                 self.log.log_me(msg)
                 # try a different url
 
                 # use the next serverURL
-                import urllib
-                typ, uri = urllib.splittype(self.serverList.server())
+                import urllib.request, urllib.parse, urllib.error
+                typ, uri = urllib.parse.splittype(self.serverList.server())
                 typ = string.lower(typ)
                 if typ not in ("http", "https"):
                     raise InvalidRedirectionError(
                         "Redirected to unsupported protocol %s" % typ)
 
 #                print "gha2"
-                self._host, self._handler = urllib.splithost(uri)
+                self._host, self._handler = urllib.parse.splithost(uri)
                 self._orig_handler = self._handler
                 self._type = typ
                 if not self._handler:
@@ -99,7 +99,7 @@ class ServerList:
         return self.serverurl
 
 
-    def next(self):
+    def __next__(self):
         self.index = self.index + 1
         if self.index >= len(self.serverList):
             return None
@@ -171,7 +171,7 @@ def getServer(refreshCallback=None):
 
     lang = None
     for env in 'LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG':
-        if os.environ.has_key(env):
+        if env in os.environ:
             if not os.environ[env]:
                 # sometimes unset
                 continue
@@ -198,7 +198,7 @@ def getServer(refreshCallback=None):
 	    msg = "%s: %s" % ("ERROR: can not find RHNS CA file:",
 				 rhns_ca_cert)
             log.log_me("%s" % msg)
-	    print msg
+	    print(msg)
             sys.exit(-1)
 
         # force the validation of the SSL cert
@@ -231,12 +231,12 @@ def doCall(method, *args, **kwargs):
         failure = 0
         ret = None        
         try:
-            ret = apply(method, args, kwargs)
+            ret = method(*args, **kwargs)
         except KeyboardInterrupt:
             raise up2dateErrors.CommunicationError(
                 "Connection aborted by the user")
         # if we get a socket error, keep tryingx2
-        except (socket.error, socket.sslerror), e:
+        except (socket.error, socket.sslerror) as e:
             log.log_me("A socket error occurred: %s, attempt #%s" % (
                 e, attempt_count))
             if attempt_count >= attempts:
@@ -246,11 +246,11 @@ def doCall(method, *args, **kwargs):
                     raise up2dateErrors.CommunicationError(e.args[0])
             else:
                 failure = 1
-        except httplib.IncompleteRead:
-            print "httplib.IncompleteRead" 
+        except http.client.IncompleteRead:
+            print("httplib.IncompleteRead") 
             raise up2dateErrors.CommunicationError("httplib.IncompleteRead")
 
-        except urllib2.HTTPError, e:
+        except urllib.error.HTTPError as e:
             msg = "\nAn HTTP error occurred:\n"
             msg = msg + "URL: %s\n" % e.filename
             msg = msg + "Status Code: %s\n" % e.code
@@ -258,7 +258,7 @@ def doCall(method, *args, **kwargs):
             log.log_me(msg)
             raise up2dateErrors.CommunicationError(msg)
         
-        except rpclib.ProtocolError, e:
+        except rpclib.ProtocolError as e:
             
             log.log_me("A protocol error occurred: %s , attempt #%s," % (
                 e.errmsg, attempt_count))
@@ -322,8 +322,8 @@ def doCall(method, *args, **kwargs):
             attempt_count = attempt_count + 1
         
         if attempt_count > attempts:
-            print "busted2"
-            print method
+            print("busted2")
+            print(method)
             raise up2dateErrors.CommunicationError("The data returned from the server was incomplete")
 
     return ret

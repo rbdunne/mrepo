@@ -4,7 +4,7 @@ import getopt
 import getpass
 import os
 import sys
-import urlparse
+import urllib.parse
 
 if os.path.exists('/usr/share/mrepo/up2date_client/'):
     sys.path.insert(-1, '/usr/share/mrepo/')
@@ -13,7 +13,7 @@ elif os.path.exists('/usr/share/rhn/up2date_client/'):
     sys.path.insert(-1, '/usr/share/rhn/')
     sys.path.insert(-1, '/usr/share/rhn/up2date_client/')
 else:
-    print >> sys.stderr, 'rhnget: up2date libraries are not installed. Aborting execution'
+    print('rhnget: up2date libraries are not installed. Aborting execution', file=sys.stderr)
     sys.exit(1)
 
 from up2date_client import config, rpcServer, up2dateErrors
@@ -44,10 +44,10 @@ def checkrelease(release, arch):
         '2.1WS': ('i386', ),
         '2.1AW': ('ia64', ),
     }
-    if release not in releases.keys():
-        raise Exception, 'Release name %s is not a known RHN release.' % release
+    if release not in list(releases.keys()):
+        raise Exception('Release name %s is not a known RHN release.' % release)
     if arch not in releases[release]:
-        raise Exception, 'RHN release %s does not exist for architecture %s.' % (release, arch)
+        raise Exception('RHN release %s does not exist for architecture %s.' % (release, arch))
     return True
 
 
@@ -66,7 +66,7 @@ def lowarch(arch):
         elif arch in archs[key]:
             return key
     else:
-        print 'gensystemid: Architecture %s unknown' % arch
+        print('gensystemid: Architecture %s unknown' % arch)
         return None
 
 
@@ -84,8 +84,8 @@ class Options:
         try:
             opts, args = getopt.getopt(args, 'a:hqp:r:u:v',
                 ['arch=', 'hostname=', 'quiet', 'release=', 'help', 'verbose', 'version'])
-        except getopt.error, exc:
-            print 'gensystemid: %s, try gensystemid -h for a list of all the options' % str(exc)
+        except getopt.error as exc:
+            print('gensystemid: %s, try gensystemid -h for a list of all the options' % str(exc))
             sys.exit(1)
 
         for opt, arg in opts:
@@ -115,41 +115,41 @@ class Options:
             self.verbose = 0
 
         if self.verbose >= 3:
-            print 'Verbosity set to level %d' % self.verbose
+            print('Verbosity set to level %d' % self.verbose)
 
         if not self.arch:
             self.arch = lowarch(os.uname()[4])
-            print 'gensystemid: Architecture not supplied, using system architecture %s' % self.arch
+            print('gensystemid: Architecture not supplied, using system architecture %s' % self.arch)
 
         if not self.hostname:
             self.hostname = '%s-%s-%s-mrepo' % (os.uname()[1].split('.')[0], self.rhnrelease, lowarch(self.arch))
 
         try:
             checkrelease(self.rhnrelease, self.arch)
-        except Exception, e:
-            print 'gensystemid:', e
+        except Exception as e:
+            print('gensystemid:', e)
             sys.exit(2)
 
         if len(args) <= 0:
-            print 'gensystemid: no destination path given'
+            print('gensystemid: no destination path given')
             sys.exit(1)
 
         self.paths = args
 
     def version(self):
-        print 'gensystemid %s' % VERSION
-        print 'Written by Dag Wieers <dag@wieers.com>'
-        print
-        print 'platform %s/%s' % (os.name, sys.platform)
-        print 'python %s' % sys.version
-        print
-        print 'build revision $Rev: 4107 $'
+        print('gensystemid %s' % VERSION)
+        print('Written by Dag Wieers <dag@wieers.com>')
+        print()
+        print('platform %s/%s' % (os.name, sys.platform))
+        print('python %s' % sys.version)
+        print()
+        print('build revision $Rev: 4107 $')
 
     def usage(self):
-        print 'usage: gensystemid -r release [-a arch] [-p password] [-q] [-u username] [-v] dir1 dir2 ...'
+        print('usage: gensystemid -r release [-a arch] [-p password] [-q] [-u username] [-v] dir1 dir2 ...')
 
     def help(self):
-        print '''Generate a custom RHN systemid
+        print('''Generate a custom RHN systemid
 
 gensystemid options:
   -a, --arch=arch              specify architecture (i386, x86_64, ppc, ia64)
@@ -159,7 +159,7 @@ gensystemid options:
   -u, --username=username      specify rhn username (asked when not given)
   -v, --verbose                increase verbosity
   -vv, -vvv, -vvvv..           increase verbosity more
-'''
+''')
 
 
 cfg = {}
@@ -186,7 +186,7 @@ def die(ret, str):
 
 def main():
     if not op.rhnusername:
-        op.rhnusername = raw_input('RHN Username: ')
+        op.rhnusername = input('RHN Username: ')
 
     if not op.rhnpassword:
         op.rhnpassword = getpass.getpass('RHN Password: ')
@@ -217,10 +217,10 @@ def main():
 
     ### Get proxy information from environment and set up2date config accordingly
     proxy = None
-    if os.environ.has_key('http_proxy'):
-        t, proxy, t, t, t, t = urlparse.urlparse(os.environ['http_proxy'])
-    elif os.environ.has_key('https_proxy'):
-        t, proxy, t, t, t, t = urlparse.urlparse(os.environ['https_proxy'])
+    if 'http_proxy' in os.environ:
+        t, proxy, t, t, t, t = urllib.parse.urlparse(os.environ['http_proxy'])
+    elif 'https_proxy' in os.environ:
+        t, proxy, t, t, t, t = urllib.parse.urlparse(os.environ['https_proxy'])
     if proxy:
         cfg['enableProxy'] = 1
         cfg['httpProxy'] = proxy
@@ -249,14 +249,14 @@ def main():
     s = rpcServer.getServer()
     try:
         systemid = rpcServer.doCall(s.registration.new_user, op.rhnusername, op.rhnpassword)
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         error(0, 'Error registering user. %s' % f.faultString)
         sys.exit(1)
 
     s = rpcServer.getServer()
     try:
         systemid = rpcServer.doCall(s.registration.new_system, auth)
-    except rpclib.Fault, f:
+    except rpclib.Fault as f:
         error(0, 'Error registering system. %s' % f.faultString)
         sys.exit(1)
 
@@ -283,9 +283,9 @@ if __name__ == '__main__':
     op = Options(sys.argv[1:])
     try:
         main()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         die(6, 'Exiting on user request')
-    except OSError, e:
+    except OSError as e:
 #       print e.errno
         die(7, 'OSError: %s' % e)
 

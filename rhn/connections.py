@@ -11,18 +11,18 @@
 
 import sys
 import string
-import SSL
-import nonblocking
+from . import SSL
+from . import nonblocking
 
-import httplib
-import xmlrpclib
+import http.client
+import xmlrpc.client
 
 # Import into the local namespace some httplib-related names
-_CS_REQ_SENT = httplib._CS_REQ_SENT
-_CS_IDLE = httplib._CS_IDLE
-ResponseNotReady = httplib.ResponseNotReady
+_CS_REQ_SENT = http.client._CS_REQ_SENT
+_CS_IDLE = http.client._CS_IDLE
+ResponseNotReady = http.client.ResponseNotReady
 
-class HTTPResponse(httplib.HTTPResponse):
+class HTTPResponse(http.client.HTTPResponse):
     def set_callback(self, rs, ws, ex, user_data, callback):
         if not isinstance(self.fp, nonblocking.NonBlockingFile):
             self.fp = nonblocking.NonBlockingFile(self.fp)
@@ -64,11 +64,11 @@ class HTTPResponse(httplib.HTTPResponse):
         return s
 
 
-class HTTPConnection(httplib.HTTPConnection):
+class HTTPConnection(http.client.HTTPConnection):
     response_class = HTTPResponse
     
     def __init__(self, host, port=None):
-        httplib.HTTPConnection.__init__(self, host, port)
+        http.client.HTTPConnection.__init__(self, host, port)
         self._cb_rs = []
         self._cb_ws = []
         self._cb_ex = []
@@ -126,7 +126,7 @@ class HTTPConnection(httplib.HTTPConnection):
                 self._cb_user_data, self._cb_callback)
 
         response.begin()
-        assert response.will_close != httplib._UNKNOWN
+        assert response.will_close != http.client._UNKNOWN
         self.__state = _CS_IDLE
 
         if response.will_close:
@@ -182,7 +182,7 @@ class HTTPProxyConnection(HTTPConnection):
         
 class HTTPSConnection(HTTPConnection):
     response_class = HTTPResponse
-    default_port = httplib.HTTPSConnection.default_port
+    default_port = http.client.HTTPSConnection.default_port
 
     def __init__(self, host, port=None, trusted_certs=None):
         HTTPConnection.__init__(self, host, port)
@@ -234,7 +234,7 @@ class HTTPSProxyConnection(HTTPProxyConnection):
         if response.status != 200:
             # Close the connection manually
             self.close()
-            raise xmlrpclib.ProtocolError(host,
+            raise xmlrpc.client.ProtocolError(host,
                 response.status, response.reason, response.msg)
         self.sock = SSL.SSLSocket(self.sock, self.trusted_certs)
         self.sock.init_ssl()

@@ -11,13 +11,13 @@ import string
 
 import rpm
 
-import up2dateErrors
-import up2dateMessages
-import rpmUtils
-import rhnErrata
-import up2dateUtils
-import rpcServer
-import config
+from . import up2dateErrors
+from . import up2dateMessages
+from . import rpmUtils
+from . import rhnErrata
+from . import up2dateUtils
+from . import rpcServer
+from . import config
 
 # used for rpmCallbacks, hopefully better than having
 # lots of globals lying around...
@@ -56,7 +56,7 @@ class RpmCallback:
             self.hashesPrinted = 0
             self.lastPercent = 0
             if type(hdr) == type(""):
-                print "     %-23.23s" % ( hdr),
+                print("     %-23.23s" % ( hdr), end=' ')
                 sys.stdout.flush()
 
             else:
@@ -68,8 +68,8 @@ class RpmCallback:
                 if self.cfg["isatty"]:
                     if self.progressCurrent == 0:
                         printit("Installing") 
-                    print "%4d:%-23.23s" % (self.progressCurrent + 1,
-                                            hdr['name']),
+                    print("%4d:%-23.23s" % (self.progressCurrent + 1,
+                                            hdr['name']), end=' ')
                     sys.stdout.flush()
                 else:
                     printit("Installing %s" % fileName)
@@ -108,7 +108,7 @@ class RpmCallback:
             self.lastPercent = 0
             self.progressTotal = 1
             self.progressCurrent = 0
-            print "%-23.23s" % "Preparing",
+            print("%-23.23s" % "Preparing", end=' ')
             sys.stdout.flush()
 
         elif what == rpm.RPMCALLBACK_TRANS_STOP:
@@ -129,11 +129,11 @@ class RpmCallback:
                                     hdr[rpm.RPMTAG_RELEASE])
 
                 if what == rpm.RPMCALLBACK_UNPACK_ERROR:
-                    raise up2dateErrors.RpmInstallError, (
+                    raise up2dateErrors.RpmInstallError(
                         "There was a rpm unpack error "\
                         "installing the package: %s" % pkg, pkg)
                 elif what == rpm.RPMCALLBACK_CPIO_ERROR:
-                    raise up2dateErrors.RpmInstallError, (
+                    raise up2dateErrors.RpmInstallError(
                         "There was a cpio error "\
                         "installing the package: %s" % pkg, pkg)
 
@@ -164,7 +164,7 @@ class RpmCallback:
                 for i in range(hashesNeeded, hashesTotal):
                     sys.stdout.write(' ')
 
-                print "(%3d%%)" % percent, 
+                print("(%3d%%)" % percent, end=' ') 
                 for i in range(hashesTotal + 6):
                     sys.stdout.write("\b")
 
@@ -180,10 +180,10 @@ class RpmCallback:
                     if not noInc:
                         self.progressCurrent = self.progressCurrent + 1
                     if self.progressTotal:
-                        print " [%3d%%]" % int(100 * (float(self.progressCurrent) /
-                                                      self.progressTotal))
+                        print(" [%3d%%]" % int(100 * (float(self.progressCurrent) /
+                                                      self.progressTotal)))
                     else:
-                        print " [%3d%%]" % 100
+                        print(" [%3d%%]" % 100)
 
         sys.stdout.flush()
 
@@ -209,7 +209,7 @@ def percent(amount, total, speed = 0, sec = 0):
         sys.stdout.write('\r')
 
         if amount == total:
-            print
+            print()
 
     if amount == total:
         lastPercent = 0
@@ -238,24 +238,24 @@ def printRetrieveHash(amount, total, speed = 0, secs = 0):
 
     if cfg["isatty"]:
         if amount == total:
-            print "%-25s" % " Done."
+            print("%-25s" % " Done.")
         else:
-            print "%4d k/sec, %02d:%02d:%02d rem." % \
+            print("%4d k/sec, %02d:%02d:%02d rem." % \
                   (speed / 1024, secs / (60*60), (secs % 3600) / 60,
-                   secs % 60),
+                   secs % 60), end=' ')
             for i in range(hashesTotal + 25):
                 sys.stdout.write("\b")
     elif amount == total:
-        print "Retrieved."
+        print("Retrieved.")
 
 def printPkg(name, shortName = None):
     if shortName:
-        print "%-27.27s " % (shortName + ":"),
+        print("%-27.27s " % (shortName + ":"), end=' ')
     else:
-        print "%-27.27s " % (name + ":"),
+        print("%-27.27s " % (name + ":"), end=' ')
 
 def printit(a):
-    print "\n" + a + "..."
+    print("\n" + a + "...")
 
 
 # generic warning dialog used in several places in wrapper
@@ -265,23 +265,23 @@ def warningDialog(message, hasGui):
             from up2date_client import gui
             gui.errorWindow(message)
         except:
-            print "Unable to open gui. Try `up2date --nox`"
-            print message
+            print("Unable to open gui. Try `up2date --nox`")
+            print(message)
     else:
-        print message
+        print(message)
 
 
 def printDepPackages(depPackages):
-    print "The following packages were added to your selection to satisfy dependencies:"
-    print """
+    print("The following packages were added to your selection to satisfy dependencies:")
+    print("""
 Name                                    Version        Release
---------------------------------------------------------------"""
+--------------------------------------------------------------""")
     for pkg in depPackages:
-        print "%-40s%-15s%-20s" % (pkg[0], pkg[1], pkg[2])
-    print
+        print("%-40s%-15s%-20s" % (pkg[0], pkg[1], pkg[2]))
+    print()
     
 def stdoutMsgCallback(msg):
-    print msg
+    print(msg)
 
 warningCallback = stdoutMsgCallback
 
@@ -290,98 +290,98 @@ warningCallback = stdoutMsgCallback
 def printVerboseList(availUpdates):
     cfg = config.initUp2dateConfig()
     if cfg['showChannels']:
-        print """
+        print("""
 Name                          Version        Rel             Channel     
-----------------------------------------------------------------------"""
+----------------------------------------------------------------------""")
         for pkg in availUpdates:
-            print "%-30s%-15s%-15s%-20s" % (pkg[0], pkg[1], pkg[2], pkg[6])
+            print("%-30s%-15s%-15s%-20s" % (pkg[0], pkg[1], pkg[2], pkg[6]))
             if cfg["debug"]:
                 time.sleep(.25)
                 advisories = rhnErrata.getAdvisoryInfo(pkg)
                 if advisories:
                     for a in advisories:
                         topic = string.join(string.split(a['topic']), ' ')
-                        print "[%s] %s\n" % (a['advisory'], topic)
+                        print("[%s] %s\n" % (a['advisory'], topic))
                 else:
-                    print "No advisory information available\n"
-        print
+                    print("No advisory information available\n")
+        print()
         return
-    print """
+    print("""
 Name                                    Version        Rel     
-----------------------------------------------------------"""
+----------------------------------------------------------""")
     for pkg in availUpdates:
-        print "%-40s%-15s%-18s%-6s" % (pkg[0], pkg[1], pkg[2], pkg[4])
+        print("%-40s%-15s%-18s%-6s" % (pkg[0], pkg[1], pkg[2], pkg[4]))
         if cfg["debug"]:
             time.sleep(.25)
             advisories = rhnErrata.getAdvisoryInfo(pkg)
             if advisories:
                 for a in advisories:
                     topic = string.join(string.split(a['topic']), ' ')
-                    print "[%s] %s\n" % (a['advisory'], topic)
+                    print("[%s] %s\n" % (a['advisory'], topic))
             else:
-                print "No advisory information available\n"
-    print
+                print("No advisory information available\n")
+    print()
 
 def printSkippedPackages(skippedUpdates):
     cfg = config.initUp2dateConfig()
-    print "The following Packages were marked to be skipped by your configuration:"
-    print """
+    print("The following Packages were marked to be skipped by your configuration:")
+    print("""
 Name                                    Version        Rel  Reason
--------------------------------------------------------------------------------"""
+-------------------------------------------------------------------------------""")
     for pkg,reason in skippedUpdates:
-        print "%-40s%-15s%-5s%s" % (pkg[0], pkg[1], pkg[2], reason)
+        print("%-40s%-15s%-5s%s" % (pkg[0], pkg[1], pkg[2], reason))
         if cfg["debug"]:
             time.sleep(.25)
             advisories = rhnErrata.getAdvisoryInfo(pkg)
             if advisories:
                 for a in advisories:
                     topic = string.join(string.split(a['topic']), ' ')
-                    print "[%s] %s\n" % (a['advisory'], topic)
+                    print("[%s] %s\n" % (a['advisory'], topic))
             else:
-                print "No advisory information available\n"
-    print
+                print("No advisory information available\n")
+    print()
 
 def printEmptyGlobsWarning(listOfGlobs):
-    print "The following wildcards did not match any packages:"
+    print("The following wildcards did not match any packages:")
     for token in listOfGlobs:
-        print token
+        print(token)
 
 def printEmptyCompsWarning(listOfComps):
-    print "The following groups did not match any packages:"
+    print("The following groups did not match any packages:")
     for token in listOfComps:
-        print token
+        print(token)
 
 def printObsoletedPackages(obsoletedPackages):
-    print "The following Packages are obsoleted by newer packages:"
-    print """
+    print("The following Packages are obsoleted by newer packages:")
+    print("""
 Name-Version-Release        obsoleted by      Name-Version-Release
--------------------------------------------------------------------------------"""
+-------------------------------------------------------------------------------""")
     for (obs,newpackages) in obsoletedPackages:
         obsstr = "%s-%s-%s" % (obs[0],obs[1],obs[2])
         newpackage = newpackages[0]
         newstr = "%s-%s-%s" % (newpackage[0], newpackage[1], newpackage[2])
-        print "%-40s%-40s" % (obsstr, newstr)
+        print("%-40s%-40s" % (obsstr, newstr))
         # we can have more than one package obsoleting something
         for newpackage in newpackages[1:]:
             newstr = "%s-%s-%s" % (newpackage[0], newpackage[1], newpackage[2])
-            print "%-40s%-40s\n" % ("", newstr)
+            print("%-40s%-40s\n" % ("", newstr))
                                        
 def  printInstalledObsoletingPackages(installedObsoletingPackages):
-    print "The following packages were not installed because they are obsoleted by installed packages:"
-    print """
+    print("The following packages were not installed because they are obsoleted by installed packages:")
+    print("""
 Name-Version-Release       obsoleted by      Name-Version-Release
--------------------------------------------------------------------------------"""
+-------------------------------------------------------------------------------""")
     for (obsoleted, obsoleting) in installedObsoletingPackages:
         obsstr = "%s-%s-%s" % (obsoleted[0],obsoleted[1],obsoleted[2])
-        print "%-40s%-40s" % (obsstr, obsoleting[0])
+        print("%-40s%-40s" % (obsstr, obsoleting[0]))
         for obsoletingstr in obsoleting[1:]:
-            print "%-40s%-40s" % (obsstr, obsoletingstr)
+            print("%-40s%-40s" % (obsstr, obsoletingstr))
 
 def printAvailablePackages(availablePackages):
-    print "The following packages are not installed but available from Red Hat Network:"
-    print """
+    print("The following packages are not installed but available from Red Hat Network:")
+    print("""
 Name                                    Version        Release  
---------------------------------------------------------------"""
+--------------------------------------------------------------""")
     for pkg in availablePackages:
-        print "%-40s%-14s%-14s" % (pkg[0], pkg[1], pkg[2])
-    print
+        print("%-40s%-14s%-14s" % (pkg[0], pkg[1], pkg[2]))
+    print()

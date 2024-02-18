@@ -24,8 +24,8 @@ import gzip
 import os
 import sys
 import types
-import urllib2
-import urlparse
+import urllib.request, urllib.error, urllib.parse
+import urllib.parse
 
 ### Python 2.5 and higher
 try:
@@ -40,7 +40,7 @@ except:
             import ElementTree
         except:
             ### No, it did not
-            print >> sys.stderr, 'Error loading python module ElementTree, please install.'
+            print('Error loading python module ElementTree, please install.', file=sys.stderr)
             sys.exit(1)
 
 __version__ = "$Revision: 4786 $"
@@ -71,8 +71,8 @@ class Options:
                                         'dryrun', 'filter=', 'help', 'list',
                                         'password=', 'quiet', 'source', 'style=',
                                         'username=', 'verbose', 'version'))
-        except getopt.error, exc:
-            print 'youget: %s, try youget -h for a list of all the options' % str(exc)
+        except getopt.error as exc:
+            print('youget: %s, try youget -h for a list of all the options' % str(exc))
             sys.exit(1)
 
         for opt, arg in opts:
@@ -87,7 +87,7 @@ class Options:
                 self.downloadall = True
             elif opt in ('-h', '--help'):
                 self.usage()
-                print
+                print()
                 self.help()
                 sys.exit(0)
             elif opt in ('-l', '--list'):
@@ -113,7 +113,7 @@ class Options:
 
         if len(args) < 1:
             self.usage()
-            print
+            print()
             self.help()
             sys.exit(1)
 
@@ -128,22 +128,22 @@ class Options:
             self.verbose = 0
 
         if self.verbose >= 3:
-            print 'Verbosity set to level %d' % (self.verbose - 1)
+            print('Verbosity set to level %d' % (self.verbose - 1))
 
     def version(self):
-        print 'youget %s' % VERSION
-        print 'Written by Dag Wieers <dag@wieers.com>'
-        print
-        print 'platform %s/%s' % (os.name, sys.platform)
-        print 'python %s' % sys.version
-        print
-        print 'build revision $Rev: 4786 $'
+        print('youget %s' % VERSION)
+        print('Written by Dag Wieers <dag@wieers.com>')
+        print()
+        print('platform %s/%s' % (os.name, sys.platform))
+        print('python %s' % sys.version)
+        print()
+        print('build revision $Rev: 4786 $')
 
     def usage(self):
-        print 'usage: youget [options] URL'
+        print('usage: youget [options] URL')
 
     def help(self):
-        print '''Download packages from Yast Online Update (YOU)
+        print('''Download packages from Yast Online Update (YOU)
 
 youget options:
   -d, --credpath=dir      credentials directory
@@ -156,7 +156,7 @@ youget options:
       --source            download source packages
   -v, --verbose           increase verbosity
   -vv, -vvv, -vvvv..      increase verbosity more
-'''
+''')
 
 
 class Set:
@@ -225,7 +225,7 @@ def filelist(top):
 
 def remove(file):
     "Remove files or directories"
-    if isinstance(file, types.StringType):
+    if isinstance(file, bytes):
         if op.dryrun:
             return
         if os.path.islink(file):
@@ -293,7 +293,7 @@ def mirroryou(url, path):
         die(2, 'No credentials found in %s.' % op.credpath)
 
     if not op.username:
-        op.username = raw_input('YOU Username: ')
+        op.username = input('YOU Username: ')
 
     if op.username and not op.password:
         op.password = getpass.getpass('YOU Password for user %s: ' % op.username)
@@ -312,10 +312,10 @@ def mirroryou_sles10(url, path):
     info(3, 'Using username %s with password %s.' % (op.username, op.password))
 
     ### Setting up connection
-    host = urlparse.urlparse(url)[1]
-    auth_handler = urllib2.HTTPDigestAuthHandler()
+    host = urllib.parse.urlparse(url)[1]
+    auth_handler = urllib.request.HTTPDigestAuthHandler()
     auth_handler.add_password('Express', host, op.username, op.password)
-    opener = urllib2.build_opener(auth_handler)
+    opener = urllib.request.build_opener(auth_handler)
     opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
     ### Download repodata for this channel
@@ -401,10 +401,10 @@ def mirroryou_nld9(url, path):
     info(3, 'Using username %s with password %s.' % (op.username, op.password))
 
     ### Setting up connection
-    host = urlparse.urlparse(url)[1]
-    auth_handler = urllib2.HTTPDigestAuthHandler()
+    host = urllib.parse.urlparse(url)[1]
+    auth_handler = urllib.request.HTTPDigestAuthHandler()
     auth_handler.add_password('Express', host, op.username, op.password)
-    opener = urllib2.build_opener(auth_handler)
+    opener = urllib.request.build_opener(auth_handler)
     opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 
     ### Download repodata for this channel
@@ -481,7 +481,7 @@ def mirroryou_nld9(url, path):
 def main():
     try:
         mirroryou(op.uri, op.destination)
-    except Exception, e:
+    except Exception as e:
         die(1, e)
 
 ### Unbuffered sys.stdout
@@ -502,7 +502,7 @@ if __name__ == '__main__':
     op = Options(sys.argv[1:])
     try:
         main()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         die(6, 'Exiting on user request')
     sys.exit(exitcode)
 

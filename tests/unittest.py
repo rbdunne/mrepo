@@ -19,18 +19,18 @@ class TestmySet(unittest.TestCase):
         
     def test_initempty(self):
         s = mySet()
-        self.assert_(isinstance(s, mrepo.mySet))
+        self.assertTrue(isinstance(s, mrepo.mySet))
 
     def test_init(self):
         s = mySet([ 1, 2, 3, 4 ])
-        self.assert_(isinstance(s, mrepo.mySet))
-        self.assert_(repr(s) == 'mySet([1, 2, 3, 4])')
+        self.assertTrue(isinstance(s, mrepo.mySet))
+        self.assertTrue(repr(s) == 'mySet([1, 2, 3, 4])')
 
     def test_add(self):
         s = self.s
-        self.assert_(9 not in s)
+        self.assertTrue(9 not in s)
         s.add(9)
-        self.assert_(9 in s)
+        self.assertTrue(9 in s)
 
     def test_eq(self):
         s1 = mySet([1, 2, 3])
@@ -132,7 +132,7 @@ class Testlinksync(unittest.TestCase):
         # tmp/dst/testdist-i386/RPMS.testrepo
         os.makedirs(repo.wwwdir)
 
-        for f in xrange(4):
+        for f in range(4):
             __touch(pj(srcdir, str(f) + '.rpm'))
         __touch(pj(srcdir, 'dontsync.txt'))
                 

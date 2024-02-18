@@ -17,11 +17,11 @@ import sys
 import time
 import string
 from types import IntType, StringType, ListType
-from SmartIO import SmartIO
+from .SmartIO import SmartIO
 
-from UserDictCase import UserDictCase
+from .UserDictCase import UserDictCase
 
-import connections
+from . import connections
 xmlrpclib = connections.xmlrpclib
 
 __version__ = "$Revision: 191145 $"
@@ -76,7 +76,7 @@ class Transport(xmlrpclib.Transport):
     # set the request method
     def set_method(self, method):
         if method not in ("GET", "POST"):
-            raise IOError, "Unknown request method %s" % method
+            raise IOError("Unknown request method %s" % method)
         self.method = method
     
     # reset the transport options
@@ -108,12 +108,12 @@ class Transport(xmlrpclib.Transport):
     def set_header(self, name, arg):
         if type(arg) in [ type([]), type(()) ]:
             # Multivalued header
-            self._headers[name] = map(str, arg)
+            self._headers[name] = list(map(str, arg))
         else:
             self._headers[name] = str(arg)
 
     def add_header(self, name, arg):
-        if self._headers.has_key(name):
+        if name in self._headers:
             vlist = self._headers[name]
             if not isinstance(vlist, ListType):
                 vlist = [ vlist ]
@@ -126,7 +126,7 @@ class Transport(xmlrpclib.Transport):
 
     def get_connection(self, host):
         if self.verbose:
-            print "Connecting via http to %s" % (host, )
+            print("Connecting via http to %s" % (host, ))
         return connections.HTTPConnection(host)
         
     def request(self, host, handler, request_body, verbose=0):
@@ -150,11 +150,11 @@ class Transport(xmlrpclib.Transport):
             connection.set_debuglevel(self.verbose - 1)
         # Get the output object to push data with
         req = Output(connection=connection, method=self.method)
-        apply(req.set_transport_flags, (), self._transport_flags)
+        req.set_transport_flags(*(), **self._transport_flags)
 
         # Add the extra headers
         req.set_header('User-Agent', self.user_agent)
-        for header, value in self._headers.items() + extra_headers:
+        for header, value in list(self._headers.items()) + extra_headers:
             # Output.set_header correctly deals with multivalued headers now
             req.set_header(header, value)
 
@@ -173,9 +173,9 @@ class Transport(xmlrpclib.Transport):
         headers, fd = req.send_http(host, handler)
         
         if self.verbose:
-            print "Incoming headers:"
-            for header, value in headers.items():
-                print "\t%s : %s" % (header, value)
+            print("Incoming headers:")
+            for header, value in list(headers.items()):
+                print("\t%s : %s" % (header, value))
 
         if fd.status in (301, 302):
             self._redirected = headers["Location"]
@@ -234,7 +234,7 @@ class Transport(xmlrpclib.Transport):
             if self.refreshCallback:
                 self.refreshCallback()
             if self.verbose:
-                print "body:", repr(response)
+                print("body:", repr(response))
             p.feed(response)
 
         f.close()
@@ -256,14 +256,14 @@ class SafeTransport(Transport):
 
     def add_trusted_cert(self, certfile):
         if not os.access(certfile, os.R_OK):
-            raise ValueError, "Certificate file %s is not accessible" % certfile
+            raise ValueError("Certificate file %s is not accessible" % certfile)
         self.trusted_certs.append(certfile)
 
     def get_connection(self, host):
         # implement BASIC HTTP AUTHENTICATION
         host, extra_headers, x509 = self.get_host_info(host)
         if self.verbose:
-            print "Connecting via https to %s" % (host, )
+            print("Connecting via https to %s" % (host, ))
         return connections.HTTPSConnection(host, trusted_certs=self.trusted_certs)
 
 
@@ -278,8 +278,8 @@ class ProxyTransport(Transport):
 
     def get_connection(self, host):
         if self.verbose:
-            print "Connecting via http to %s proxy %s, username %s, pass %s" % (
-                host, self._proxy, self._proxy_username, self._proxy_password)
+            print("Connecting via http to %s proxy %s, username %s, pass %s" % (
+                host, self._proxy, self._proxy_username, self._proxy_password))
         return connections.HTTPProxyConnection(self._proxy, host, 
             username=self._proxy_username, password=self._proxy_password)
 
@@ -298,13 +298,13 @@ class SafeProxyTransport(ProxyTransport):
 
     def add_trusted_cert(self, certfile):
         if not os.access(certfile, os.R_OK):
-            raise ValueError, "Certificate file %s is not accessible" % certfile
+            raise ValueError("Certificate file %s is not accessible" % certfile)
         self.trusted_certs.append(certfile)
 
     def get_connection(self, host):
         if self.verbose:
-            print "Connecting via https to %s proxy %s, username %s, pass %s" % (
-                host, self._proxy, self._proxy_username, self._proxy_password)
+            print("Connecting via https to %s proxy %s, username %s, pass %s" % (
+                host, self._proxy, self._proxy_username, self._proxy_password))
         return connections.HTTPSProxyConnection(self._proxy, host, 
             username=self._proxy_username, password=self._proxy_password, 
             trusted_certs=self.trusted_certs)
@@ -348,25 +348,25 @@ class Input:
         
         if not headers:
             # we need to get them from environment
-            if os.environ.has_key("HTTP_CONTENT_TRANSFER_ENCODING"):
+            if "HTTP_CONTENT_TRANSFER_ENCODING" in os.environ:
                 self.transfer = string.lower(
                     os.environ["HTTP_CONTENT_TRANSFER_ENCODING"])
-            if os.environ.has_key("HTTP_CONTENT_ENCODING"):
+            if "HTTP_CONTENT_ENCODING" in os.environ:
                 self.encoding = string.lower(os.environ["HTTP_CONTENT_ENCODING"])
-            if os.environ.has_key("CONTENT-TYPE"):
+            if "CONTENT-TYPE" in os.environ:
                 self.type = string.lower(os.environ["CONTENT-TYPE"])
-            if os.environ.has_key("CONTENT_LENGTH"):
+            if "CONTENT_LENGTH" in os.environ:
                 self.length = int(os.environ["CONTENT_LENGTH"])
-            if os.environ.has_key("HTTP_ACCEPT_LANGUAGE"):
+            if "HTTP_ACCEPT_LANGUAGE" in os.environ:
                 self.lang = os.environ["HTTP_ACCEPT_LANGUAGE"]
-            if os.environ.has_key("HTTP_X_PACKAGE_FILENAME"):
+            if "HTTP_X_PACKAGE_FILENAME" in os.environ:
                 self.name = os.environ["HTTP_X_PACKAGE_FILENAME"]
         else:
             # The stupid httplib screws up the headers from the HTTP repsonse
             # and converts them to lowercase. This means that we have to
             # convert to lowercase all the dictionary keys in case somebody calls
             # us with sane values --gaftonc (actually mimetools is the culprit)
-            for header in headers.keys():
+            for header in list(headers.keys()):
                 value = headers[header]
                 h = string.lower(header)
                 if h == "content-length":
@@ -628,12 +628,12 @@ class BaseOutput:
             # fields into one "field-name: field-value" pair, without
             # changing the semantics of the message, by appending each
             # subsequent field-value to the first, each separated by a comma.
-            self.headers[name] = string.join(map(str, arg), ',')
+            self.headers[name] = string.join(list(map(str, arg)), ',')
         else:
             self.headers[name] = str(arg)
 
     def clear_header(self, name):
-        if self.headers.has_key(name):
+        if name in self.headers:
             del self.headers[name]
 
     def process(self, data):

@@ -14,9 +14,9 @@ import sys
 sys.path.insert(0, "/usr/share/rhn/")
 sys.path.insert(1,"/usr/share/rhn/up2date_client")
 
-import up2dateUtils
-import up2dateLog
-import up2dateErrors
+from . import up2dateUtils
+from . import up2dateLog
+from . import up2dateErrors
 import glob
 import socket
 import re
@@ -25,19 +25,19 @@ import rpm
 import string
 import time
 import struct
-import config
-import rpmUtils
-import up2dateAuth
-import up2dateUtils
+from . import config
+from . import rpmUtils
+from . import up2dateAuth
+from . import up2dateUtils
 #import headers
 #import rpcServer
-import transaction
+from . import transaction
 #import timeoutsocket
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import gzip
-import rhnChannel
+from . import rhnChannel
 import sys
-import rpmSourceUtils
+from . import rpmSourceUtils
 
 from rhn import rpclib
 
@@ -47,7 +47,7 @@ BUFFER_SIZE = 8092
 
 
 def factory(aClass, *args, **kwargs):
-    return apply(aClass, args, kwargs)
+    return aClass(*args, **kwargs)
 
 
 class HeaderCache:
@@ -84,7 +84,7 @@ class HeaderCache:
             # but if we hit the max cache size, this is as good as
             # any mechanism for freeing up space in the cache. This
             # would be a good place to put some smarts
-            bar = self.__cache.keys()
+            bar = list(self.__cache.keys())
             del self.__cache[bar[self.cache_size-1]]
             self.__cache[item] = value
             self.__cacheLite[item] = self.__liteCopy(value)
@@ -100,10 +100,10 @@ class HeaderCache:
         return len(self.__cache)
 
     def keys(self):
-        return self.__cache.keys()
+        return list(self.__cache.keys())
 
     def values(self):
-        return self.__cache.keys()
+        return list(self.__cache.keys())
 
     def has_key(self, item,lite=None):
 #        print "\n########\nhas_key called\n###########\n"
@@ -111,15 +111,15 @@ class HeaderCache:
 #        print self.__cache.keys()
         
         if lite:
-            return self.__cacheLite.has_key(item)
+            return item in self.__cacheLite
         else:
-            return self.__cache.has_key(item)
+            return item in self.__cache
 
     def __delitem__(self, item):
         del self.__cache[item]
 
     def printLite(self):
-        print self.__cacheLite
+        print(self.__cacheLite)
 
 
 # this is going to be a factory. More than likely, it's input for
@@ -289,7 +289,7 @@ class HeaderMemoryCache(PackageSource):
             if self.headerCache.has_key(up2dateUtils.pkgToStringArch(pkg), lite = 1):
                 return self.headerCache.getLite(up2dateUtils.pkgToStringArch(pkg))
 
-        if self.headerCache.has_key(up2dateUtils.pkgToStringArch(pkg)):
+        if up2dateUtils.pkgToStringArch(pkg) in self.headerCache:
             return self.headerCache[up2dateUtils.pkgToStringArch(pkg)]
 
 
@@ -466,7 +466,7 @@ class DiskCache(PackageSource):
     def __readHeaderFromFile(self, fileNames, pkg):
         if os.access(fileNames[0], os.R_OK):
             if os.stat(fileNames[0])[6] == 0:
-                print "stat failed", fileNames[0]
+                print("stat failed", fileNames[0])
                 return None
             hdr = rpmUtils.readHeader(fileNames[0])
             if hdr == None:
@@ -639,16 +639,16 @@ class Up2datePackageSource(PackageSource):
             ret = self.s.up2date.header(up2dateAuth.getSystemId(), pkg)
         except KeyboardInterrupt:
             raise up2dateErrors.CommunicationError("Connection aborted by the user")
-        except (socket.error, socket.sslerror), e:
+        except (socket.error, socket.sslerror) as e:
             if len(e.args) > 1:
                 raise up2dateErrors.CommunicationError(e.args[1])
             else:
                 raise up2dateErrors.CommunicationError(e.args[0])
-        except rpclib.ProtocolError, e:
+        except rpclib.ProtocolError as e:
             raise up2dateErrors.CommunicationError(e.errmsg)
         except rpclib.ResponseError:
             raise up2dateErrors.CommunicationError("Broken response from the server.");
-        except rpclib.Fault, f:
+        except rpclib.Fault as f:
             raise up2dateErrors.CommunicationError(f.faultString)
 
         bin = ret[0]
@@ -662,7 +662,7 @@ class Up2datePackageSource(PackageSource):
 
 
 def callback(total, complete):
-    print "-- %s bytes of %s" % (total, complete)
+    print("-- %s bytes of %s" % (total, complete))
 
 # FIXME: super ugly hack that deserves to die
 def updateHttpServer(packageSourceChain, logininfo, serverSettings):

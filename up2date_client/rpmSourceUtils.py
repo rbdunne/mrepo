@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import config
+from . import config
 import rpm
 import string
 import os
@@ -12,7 +12,7 @@ from rhn import rpclib
 
 
 def factory(aClass, *args, **kwargs):
-    return apply(aClass, args, kwargs)
+    return aClass(*args, **kwargs)
 
 
 def saveHeader(hdr):
@@ -27,7 +27,7 @@ def saveHeader(hdr):
                                  hdr['arch'])
 
 #    print fileName
-    fd = os.open(fileName, os.O_WRONLY|os.O_CREAT, 0600)
+    fd = os.open(fileName, os.O_WRONLY|os.O_CREAT, 0o600)
 
     os.write(fd, hdr.unload())
     os.close(fd)

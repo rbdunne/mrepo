@@ -16,7 +16,7 @@
 
 ### FIXME: distutils is pretty clueless for tools (no globs, no renames, ...)
 import sys
-print 'Distutils installation not enabled. Please use Makefile for now.'
+print('Distutils installation not enabled. Please use Makefile for now.')
 sys.exit(1)
 
 # if someday we want to *require* setuptools, uncomment this:

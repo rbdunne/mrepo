@@ -6,8 +6,8 @@
 #  "Copyright 2002-3, Mark Pilgrim"
 
 import sys
-import urllib2
-import StringIO
+import urllib.request, urllib.error, urllib.parse
+import io
 import gzip
 import time
 import re
@@ -15,7 +15,7 @@ import re
 from up2date_client import up2dateErrors
 
 BUFFER_SIZE=8092
-class MiscURLHandler(urllib2.HTTPRedirectHandler, urllib2.HTTPDefaultErrorHandler):
+class MiscURLHandler(urllib.request.HTTPRedirectHandler, urllib.request.HTTPDefaultErrorHandler):
     def http_error_default(self, req, fp, code, msg, headers):
 	#print "code: %s" % code
         if ((code / 100) == 3) and (code != 304):
@@ -30,24 +30,24 @@ class MiscURLHandler(urllib2.HTTPRedirectHandler, urllib2.HTTPDefaultErrorHandle
 
 
     def http_error_302(self, req, fp, code, msg, headers):
-        infourl = urllib2.HTTPRedirectHandler.http_error_302(self, req, fp, code, msg, headers)
+        infourl = urllib.request.HTTPRedirectHandler.http_error_302(self, req, fp, code, msg, headers)
         if not hasattr(infourl, "status"):
             infourl.status = code
 
         return infourl
 
     def http_error_301(self, req, fp, code, msg, headers):
-        infourl = urllib2.HTTPRedirectHandler.http_error_301(self, req, fp, code, msg, headers)
+        infourl = urllib.request.HTTPRedirectHandler.http_error_301(self, req, fp, code, msg, headers)
         infourl.status = code
         return infourl
 
     def http_error_404(self, req, fp, code, msg, headers):
-        infourl = urllib2.HTTPDefaultErrorHandler.http_error_default(self, req, fp, code, msg, headers)
+        infourl = urllib.request.HTTPDefaultErrorHandler.http_error_default(self, req, fp, code, msg, headers)
         infourl.status = code
         return infourl
 
     def http_error_403(self, req, fp, code, msg, headers):
-        infourl = urllib2.HTTPDefaultErrorHandler.http_error_default(self, req, fp, code, msg, headers)
+        infourl = urllib.request.HTTPDefaultErrorHandler.http_error_default(self, req, fp, code, msg, headers)
         infourl.status = code
         return infourl
 
@@ -89,7 +89,7 @@ def open_resource(source, etag=None, modified=None, agent=None, referrer=None, s
         agent = USER_AGENT
         
     # try to open with urllib2 (to use optional headers)
-    request = urllib2.Request(source)
+    request = urllib.request.Request(source)
     if etag:
         request.add_header("If-None-Match", etag)
     if modified:
@@ -106,21 +106,21 @@ def open_resource(source, etag=None, modified=None, agent=None, referrer=None, s
         end = endRange
     if startRange or endRange:
         range = "bytes=%s-%s" % (start, end)
-        print range
+        print(range)
         request.add_header("Range", range)
                            
-    opener = urllib2.build_opener(MiscURLHandler())
+    opener = urllib.request.build_opener(MiscURLHandler())
     #print request.headers
     opener.addheaders = [] # RMK - must clear so we only send our custom User-Agent
     #return opener.open(request)
     try:
         return opener.open(request)
     except OSError:
-	print "%s not a valud URL" % source
+	print("%s not a valud URL" % source)
         # source is not a valid URL, but it might be a valid filename
         pass
     except ValueError:
-	print "%s is of an unknown URL type" % source
+	print("%s is of an unknown URL type" % source)
     	pass
 
 
@@ -128,15 +128,15 @@ def open_resource(source, etag=None, modified=None, agent=None, referrer=None, s
     try:
         return open(source)
     except:
-	print sys.exc_info()
-	print sys.exc_type
+	print(sys.exc_info())
+	print(sys.exc_info()[0])
         pass
 
     # huh, not sure I like that at all... probabaly need
     # to change this to returning a fd/fh and reading on it.
     # but shrug, this is just for local files anway... -akl
     # treat source as string
-    return StringIO.StringIO(str(source))
+    return io.StringIO(str(source))
 
 def get_etag(resource):
     """
@@ -249,7 +249,7 @@ def get_size(resource):
         if size == None:
             return size
         # packages can be big
-        return long(size)
+        return int(size)
     return None
 
 
@@ -370,12 +370,12 @@ def fetchUrlAndWriteFD(url, writefd, progressCallback=None, msgCallback=None,
 def main():
     fh = open_resource("http://www.japanairband.com/sdfsdfasdferwregsdfg/",
                        agent = "foobar")
-    print fh
+    print(fh)
 
     if hasattr(fh, 'status'):
-        print "status: %s" % fh.status
+        print("status: %s" % fh.status)
     else:
-        print "no status"
+        print("no status")
 
 
 if __name__ == "__main__":

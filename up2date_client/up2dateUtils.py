@@ -23,10 +23,10 @@ except ImportError:
 
 sys.path.insert(0, "/usr/share/rhn/")
 sys.path.insert(1,"/usr/share/rhn/up2date_client")
-import rpmUtils
-import up2dateErrors
-import transaction
-import config
+from . import rpmUtils
+from . import up2dateErrors
+from . import transaction
+from . import config
 
 
 def rpmFlagsToOperator(flags):
@@ -72,7 +72,7 @@ def pkglistToString(pkgs):
     return packages
 
 def restartUp2date():
-    print "Restarting up2date"
+    print("Restarting up2date")
     args = sys.argv[:]
     return_code = os.spawnvp(os.P_WAIT, sys.argv[0], args)
     sys.exit(return_code)
@@ -271,7 +271,7 @@ def version():
 
 def pprint_pkglist(pkglist):
     if type(pkglist) == type([]):
-        foo = map(lambda a : "%s-%s-%s" % (a[0],a[1],a[2]), pkglist)
+        foo = ["%s-%s-%s" % (a[0],a[1],a[2]) for a in pkglist]
     else:
         foo = "%s-%s-%s" % (pkglist[0], pkglist[1], pkglist[2])
     return foo
@@ -316,7 +316,7 @@ def freeDiskSpace():
     import statvfs
 
     dfInfo = os.statvfs(cfg["storageDir"])
-    return long(dfInfo[statvfs.F_BAVAIL]) * (dfInfo[statvfs.F_BSIZE])
+    return int(dfInfo[statvfs.F_BAVAIL]) * (dfInfo[statvfs.F_BSIZE])
 
 # file used to keep track of the next time rhn_check 
 # is allowed to update the package list on the server

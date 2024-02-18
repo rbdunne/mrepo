@@ -8,7 +8,7 @@
 #         Cristian Gafton <gafton@redhat.com>
 #
 
-import up2dateLog
+from . import up2dateLog
 
 
 class Error:
@@ -210,7 +210,7 @@ class RpmRemoveError(Error):
     def __init__(self, args):
         self.args = args
         self.errmsg = ""
-        for key in self.args.keys():
+        for key in list(self.args.keys()):
             self.errmsg = self.errmsg + "%s failed because of %s\n" % (
                 key, self.args[key])
         self.data = self.args

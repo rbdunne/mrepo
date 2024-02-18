@@ -9,9 +9,9 @@ import os
 import string
 import sys
 
-import capabilities
-import config
-import up2dateErrors
+from . import capabilities
+from . import config
+from . import up2dateErrors
 
 class ClientCapabilities(UserDict.UserDict):
     def __init__(self):
@@ -32,7 +32,7 @@ class ClientCapabilities(UserDict.UserDict):
 
     def headerFormat(self):
         headerList = []
-        for key in self.data.keys():
+        for key in list(self.data.keys()):
             headerName = "X-RHN-Client-Capability"
             value = "%s(%s)=%s" % (key,
                                    self.data[key]['version'],

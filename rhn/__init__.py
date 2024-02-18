@@ -8,7 +8,7 @@
 rhn - A collection of modules used by Red Hat Network
 """
 
-import rpclib
+from . import rpclib
 xmlrpclib = rpclib.xmlrpclib
 
 __all__ = ["rpclib", "xmlrpclib"]
